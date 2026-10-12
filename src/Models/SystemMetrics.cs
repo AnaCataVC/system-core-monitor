@@ -60,21 +60,12 @@ namespace SystemCoreMonitor.Models
         public double PercentUsed { get; set; }
         public string Status { get; set; }
 
-        /// <summary>
-        /// True for cloud/virtual mounts that Windows reports as fixed drives.
-        /// Their capacity mirrors the host volume, so they are excluded from
-        /// aggregate storage math and rendered without a usage bar.
-        /// </summary>
-        public bool IsVirtual { get; set; }
-        public string KindLabel { get; set; }
-
         public DiskMetric()
         {
             Name = "";
             VolumeLabel = "";
             DriveFormat = "";
             Status = "Ok";
-            KindLabel = "";
         }
     }
 
@@ -332,20 +323,6 @@ namespace SystemCoreMonitor.Models
         public ServiceMetric()
         {
             CriticalServices = new List<ServiceItem>();
-        }
-    }
-
-    public class TaskItem
-    {
-        public string TaskName { get; set; }
-        public string TaskPath { get; set; }
-        public string State { get; set; }
-
-        public TaskItem()
-        {
-            TaskName = "";
-            TaskPath = "";
-            State = "";
         }
     }
 

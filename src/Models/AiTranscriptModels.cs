@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using SystemCoreMonitor.Core;
 
 namespace SystemCoreMonitor.Models
 {
@@ -20,19 +21,8 @@ namespace SystemCoreMonitor.Models
         public int StaleFileCount { get; set; }
         public long StaleSizeBytes { get; set; }
 
-        public string TotalSizeDisplay => FormatBytes(TotalSizeBytes);
-        public string StaleSizeDisplay => FormatBytes(StaleSizeBytes);
-
-        private static string FormatBytes(long bytes)
-        {
-            if (bytes >= 1024L * 1024L * 1024L)
-                return string.Format("{0:N2} GB", bytes / (1024.0 * 1024.0 * 1024.0));
-            if (bytes >= 1024L * 1024L)
-                return string.Format("{0:N1} MB", bytes / (1024.0 * 1024.0));
-            if (bytes >= 1024L)
-                return string.Format("{0:N0} KB", bytes / 1024.0);
-            return string.Format("{0} B", bytes);
-        }
+        public string TotalSizeDisplay => MetricFormatting.FormatBytesAuto(TotalSizeBytes);
+        public string StaleSizeDisplay => MetricFormatting.FormatBytesAuto(StaleSizeBytes);
     }
 
     public class AiTranscriptItem
@@ -48,18 +38,7 @@ namespace SystemCoreMonitor.Models
         public bool IsActive { get; set; }
         public int? ProcessId { get; set; }
 
-        public string FileSizeDisplay
-        {
-            get
-            {
-                if (FileSizeBytes >= 1024L * 1024L)
-                    return string.Format("{0:N1} MB", FileSizeBytes / (1024.0 * 1024.0));
-                if (FileSizeBytes >= 1024L)
-                    return string.Format("{0:N0} KB", FileSizeBytes / 1024.0);
-                return string.Format("{0} B", FileSizeBytes);
-            }
-        }
-
+        public string FileSizeDisplay => MetricFormatting.FormatBytesAuto(FileSizeBytes);
         public string LastModifiedDisplay => LastModified != DateTime.MinValue ? LastModified.ToString("yyyy-MM-dd HH:mm") : "N/A";
     }
 
@@ -74,29 +53,8 @@ namespace SystemCoreMonitor.Models
         public bool ClaudeIsRunning { get; set; }
         public bool AntigravityIsRunning { get; set; }
 
-        public string TotalSizeDisplay
-        {
-            get
-            {
-                if (TotalSizeBytes >= 1024L * 1024L * 1024L)
-                    return string.Format("{0:N2} GB", TotalSizeBytes / (1024.0 * 1024.0 * 1024.0));
-                if (TotalSizeBytes >= 1024L * 1024L)
-                    return string.Format("{0:N1} MB", TotalSizeBytes / (1024.0 * 1024.0));
-                return string.Format("{0:N0} KB", TotalSizeBytes / 1024.0);
-            }
-        }
-
-        public string StaleSizeDisplay
-        {
-            get
-            {
-                if (StaleSizeBytes >= 1024L * 1024L * 1024L)
-                    return string.Format("{0:N2} GB", StaleSizeBytes / (1024.0 * 1024.0 * 1024.0));
-                if (StaleSizeBytes >= 1024L * 1024L)
-                    return string.Format("{0:N1} MB", StaleSizeBytes / (1024.0 * 1024.0));
-                return string.Format("{0:N0} KB", StaleSizeBytes / 1024.0);
-            }
-        }
+        public string TotalSizeDisplay => MetricFormatting.FormatBytesAuto(TotalSizeBytes);
+        public string StaleSizeDisplay => MetricFormatting.FormatBytesAuto(StaleSizeBytes);
     }
 
     public class AiTranscriptCleanupResult
@@ -108,16 +66,6 @@ namespace SystemCoreMonitor.Models
         public string Message { get; set; } = string.Empty;
         public bool Skipped { get; set; }
 
-        public string BytesFreedDisplay
-        {
-            get
-            {
-                if (BytesFreed >= 1024L * 1024L * 1024L)
-                    return string.Format("{0:N2} GB", BytesFreed / (1024.0 * 1024.0 * 1024.0));
-                if (BytesFreed >= 1024L * 1024L)
-                    return string.Format("{0:N1} MB", BytesFreed / (1024.0 * 1024.0));
-                return string.Format("{0:N0} KB", BytesFreed / 1024.0);
-            }
-        }
+        public string BytesFreedDisplay => MetricFormatting.FormatBytesAuto(BytesFreed);
     }
 }

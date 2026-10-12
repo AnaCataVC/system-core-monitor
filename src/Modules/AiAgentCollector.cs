@@ -610,11 +610,7 @@ namespace SystemCoreMonitor.Modules
             return 0.0;
         }
 
-        private static DateTime TryGetStartTime(Process p)
-        {
-            try { return p.StartTime; }
-            catch { return DateTime.MinValue; }
-        }
+        private static DateTime TryGetStartTime(Process p) => ProcessManager.TryGetStartTime(p);
 
         private static long TryGetWorkingSet(Process p)
         {

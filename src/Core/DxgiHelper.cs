@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
@@ -10,7 +10,6 @@ namespace SystemCoreMonitor.Core
         public string Description { get; set; }
         public uint VendorId { get; set; }
         public uint DeviceId { get; set; }
-        public NativeMethods.LUID Luid { get; set; }
         public string LuidString { get; set; }
         public double DedicatedVramMB { get; set; }
         public double SharedVramMB { get; set; }

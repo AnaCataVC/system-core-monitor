@@ -41,17 +41,6 @@ namespace SystemCoreMonitor.Core
             public int BatteryFullLifeTime;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        public struct LUID
-        {
-            public uint LowPart;
-            public int HighPart;
-
-            public string ToCounterFormat()
-            {
-                return string.Format("luid_0x{0:X8}_0x{1:X8}", HighPart, LowPart).ToLowerInvariant();
-            }
-        }
 
         #region Kernel32 P/Invoke
 
@@ -127,8 +116,6 @@ namespace SystemCoreMonitor.Core
 
         #region User32 Monitor & Multi-Screen P/Invoke
 
-        public const uint MONITOR_DEFAULTTONULL    = 0x00000000;
-        public const uint MONITOR_DEFAULTTOPRIMARY = 0x00000001;
         public const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
         public const int WM_GETMINMAXINFO = 0x0024;
 
@@ -173,32 +160,18 @@ namespace SystemCoreMonitor.Core
 
         #region Shell Notification Icon (System Tray) P/Invoke
 
-        public const int WM_USER = 0x0400;
-        public const int WM_TRAYICON = WM_USER + 1024;
+        public const int WM_TRAYICON = 0x0400 + 1024;
 
         public const uint NIM_ADD = 0x00000000;
         public const uint NIM_MODIFY = 0x00000001;
         public const uint NIM_DELETE = 0x00000002;
-        public const uint NIM_SETVERSION = 0x00000004;
 
         public const uint NIF_MESSAGE = 0x00000001;
         public const uint NIF_ICON = 0x00000002;
         public const uint NIF_TIP = 0x00000004;
-        public const uint NIF_STATE = 0x00000008;
         public const uint NIF_INFO = 0x00000010;
-        public const uint NIF_GUID = 0x00000020;
-        public const uint NIF_SHOWTIP = 0x00000080;
 
-        public const uint NIIF_NONE = 0x00000000;
         public const uint NIIF_INFO = 0x00000001;
-        public const uint NIIF_WARNING = 0x00000002;
-        public const uint NIIF_ERROR = 0x00000003;
-
-        public const int WM_NULL = 0x0000;
-        public const int WM_LBUTTONUP = 0x0202;
-        public const int WM_LBUTTONDBLCLK = 0x0203;
-        public const int WM_RBUTTONUP = 0x0205;
-        public const int WM_CONTEXTMENU = 0x007B;
 
         [StructLayout(LayoutKind.Sequential)]
         public struct POINT
@@ -236,12 +209,6 @@ namespace SystemCoreMonitor.Core
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool Shell_NotifyIcon(uint dwMessage, [In] ref NOTIFYICONDATA lpData);
 
-        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        public static extern uint RegisterWindowMessage(string lpString);
-
-        [DllImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool SetForegroundWindow(IntPtr hWnd);
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -272,9 +239,6 @@ namespace SystemCoreMonitor.Core
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool DestroyIcon(IntPtr hIcon);
 
-        [DllImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool GetCursorPos(out POINT lpPoint);
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -392,16 +356,13 @@ namespace SystemCoreMonitor.Core
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern IntPtr CreateToolhelp32Snapshot(uint dwFlags, uint th32ProcessID);
 
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "Process32FirstW")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool Process32FirstW(IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
+        public static extern bool Process32First(IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
 
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "Process32NextW")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool Process32NextW(IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
-
-        public static bool Process32First(IntPtr hSnapshot, ref PROCESSENTRY32 lppe) => Process32FirstW(hSnapshot, ref lppe);
-        public static bool Process32Next(IntPtr hSnapshot, ref PROCESSENTRY32 lppe) => Process32NextW(hSnapshot, ref lppe);
+        public static extern bool Process32Next(IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
 
         [LibraryImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -447,16 +408,10 @@ namespace SystemCoreMonitor.Core
         public const uint SERVICE_WIN32 = 0x00000030;
         public const uint SERVICE_STATE_ALL = 0x00000003;
         public const uint SC_ENUM_PROCESS_INFO = 0;
-        public const uint SERVICE_QUERY_STATUS = 0x0004;
         public const uint SERVICE_START = 0x0010;
         public const uint SERVICE_STOP = 0x0020;
-        public const uint SERVICE_PAUSE_CONTINUE = 0x0040;
-        public const uint SERVICE_NO_CHANGE = 0xFFFFFFFF;
 
         public const int SERVICE_CONTROL_STOP = 0x00000001;
-        public const int SERVICE_CONTROL_PAUSE = 0x00000002;
-        public const int SERVICE_CONTROL_CONTINUE = 0x00000003;
-        public const int SERVICE_CONTROL_INTERROGATE = 0x00000004;
 
         // Service current states
         public const int SERVICE_STOPPED = 0x00000001;
@@ -466,8 +421,6 @@ namespace SystemCoreMonitor.Core
         public const int SERVICE_CONTINUE_PENDING = 0x00000005;
         public const int SERVICE_PAUSE_PENDING = 0x00000006;
         public const int SERVICE_PAUSED = 0x00000007;
-
-        public const uint ERROR_MORE_DATA = 234;
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public struct ENUM_SERVICE_STATUS_PROCESS

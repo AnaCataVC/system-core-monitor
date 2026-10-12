@@ -597,9 +597,23 @@ namespace SystemCoreMonitor.UI
                 });
             });
         }
-        private void TrayMenuMinToTray_Click(object sender, RoutedEventArgs e) => _config.MinimizeToTray = !_config.MinimizeToTray;
-        private void TrayMenuCloseToTray_Click(object sender, RoutedEventArgs e) => _config.CloseToTray = !_config.CloseToTray;
-        private void TrayMenuRunAtStartup_Click(object sender, RoutedEventArgs e) => _config.RunAtStartup = !_config.RunAtStartup;
+        private void TrayMenuMinToTray_Click(object sender, RoutedEventArgs e)
+        {
+            _config.MinimizeToTray = !_config.MinimizeToTray;
+            ConfigManager.Save(_config);
+        }
+
+        private void TrayMenuCloseToTray_Click(object sender, RoutedEventArgs e)
+        {
+            _config.CloseToTray = !_config.CloseToTray;
+            ConfigManager.Save(_config);
+        }
+
+        private void TrayMenuRunAtStartup_Click(object sender, RoutedEventArgs e)
+        {
+            _config.RunAtStartup = !_config.RunAtStartup;
+            ConfigManager.Save(_config);
+        }
         private void BtnTaskMgr_Click(object sender, RoutedEventArgs e) => ToolLauncher.StartTaskManager();
         private void BtnResMon_Click(object sender, RoutedEventArgs e) => ToolLauncher.StartResourceMonitor();
         private void MenuOpenServices_Click(object sender, RoutedEventArgs e) => ToolLauncher.StartServicesConsole();

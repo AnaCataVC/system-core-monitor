@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using SystemCoreMonitor.Models;
@@ -296,7 +296,7 @@ namespace SystemCoreMonitor.Core
 
         public static string ClassifyBySize(long sizeBytes)
         {
-            double gb = sizeBytes / (1024.0 * 1024.0 * 1024.0);
+            double gb = MetricFormatting.BytesToGB(sizeBytes);
             if (gb >= CritThresholdGB) return "Crit";
             if (gb >= WarnThresholdGB) return "Warn";
             return "Info";

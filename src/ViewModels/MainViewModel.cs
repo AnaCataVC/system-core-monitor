@@ -9,7 +9,6 @@ namespace SystemCoreMonitor.ViewModels
     {
         private string _title = string.Empty;
         private bool _isSelected;
-        private string _badgeText = string.Empty;
 
         public string LocalizationKey { get; init; } = string.Empty;
         public string Title
@@ -35,12 +34,6 @@ namespace SystemCoreMonitor.ViewModels
             set => SetProperty(ref _isVisible, value);
         }
 
-        public string BadgeText
-        {
-            get => _badgeText;
-            set => SetProperty(ref _badgeText, value);
-        }
-
         public void RefreshTitle()
         {
             if (!string.IsNullOrEmpty(LocalizationKey))
@@ -54,7 +47,6 @@ namespace SystemCoreMonitor.ViewModels
     {
         private ViewModelBase _currentViewModel;
         private string _viewMode = "Full";
-        private NavigationItem? _selectedNavItem;
         private NavigationItem? _acceleratorsNavItem;
 
         public DashboardViewModel Dashboard { get; } = new();
@@ -72,12 +64,6 @@ namespace SystemCoreMonitor.ViewModels
 
         public ObservableCollection<NavigationItem> NavigationItems { get; } = new();
 
-        public NavigationItem? SelectedNavItem
-        {
-            get => _selectedNavItem;
-            set => SetProperty(ref _selectedNavItem, value);
-        }
-
         public ViewModelBase CurrentViewModel
         {
             get => _currentViewModel;
@@ -91,7 +77,6 @@ namespace SystemCoreMonitor.ViewModels
         }
 
         public RelayCommand<Type> NavigateCommand { get; }
-        public RelayCommand<string> SetViewModeCommand { get; }
 
         public MainViewModel()
         {
@@ -100,11 +85,6 @@ namespace SystemCoreMonitor.ViewModels
             NavigateCommand = new RelayCommand<Type>(type =>
             {
                 if (type != null) NavigateTo(type);
-            });
-
-            SetViewModeCommand = new RelayCommand<string>(mode =>
-            {
-                if (!string.IsNullOrEmpty(mode)) ViewMode = mode;
             });
 
             InitializeNavItems();
@@ -141,8 +121,6 @@ namespace SystemCoreMonitor.ViewModels
             NavigationItems.Add(new NavigationItem { LocalizationKey = "TabServices", Title = LocalizationManager.Get("TabServices"), IconKey = "IconService", ViewModelType = typeof(ServicesViewModel) });
             NavigationItems.Add(new NavigationItem { LocalizationKey = "TabStartup", Title = LocalizationManager.Get("TabStartup"), IconKey = "IconStartup", ViewModelType = typeof(StartupViewModel) });
             NavigationItems.Add(new NavigationItem { LocalizationKey = "MenuSettings", Title = LocalizationManager.Get("MenuSettings"), IconKey = "IconSettings", ViewModelType = typeof(SettingsViewModel) });
-
-            _selectedNavItem = NavigationItems[0];
         }
 
         public void SetAcceleratorsVisibility(bool visible)

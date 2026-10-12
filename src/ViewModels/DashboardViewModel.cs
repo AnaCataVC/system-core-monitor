@@ -73,7 +73,7 @@ namespace SystemCoreMonitor.ViewModels
         public DashboardViewModel()
         {
             PowerPlanManager.GetActiveScheme(out string initialScheme);
-            _currentPowerPlan = initialScheme == "Power Saver" ? "Saver" : initialScheme == "High Performance" ? "HighPerf" : "Balanced";
+            _currentPowerPlan = MapSchemeToKey(initialScheme);
 
             OptimizeMemoryCommand = new AsyncRelayCommand(async () =>
             {
@@ -130,8 +130,15 @@ namespace SystemCoreMonitor.ViewModels
             Npu = npu;
 
             PowerPlanManager.GetActiveScheme(out string activeScheme);
-            string mapped = activeScheme == "Power Saver" ? "Saver" : activeScheme == "High Performance" ? "HighPerf" : "Balanced";
+            string mapped = MapSchemeToKey(activeScheme);
             if (CurrentPowerPlan != mapped) CurrentPowerPlan = mapped;
         }
+
+        private static string MapSchemeToKey(string scheme) => scheme switch
+        {
+            "Power Saver" => "Saver",
+            "High Performance" => "HighPerf",
+            _ => "Balanced"
+        };
     }
 }

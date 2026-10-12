@@ -11,11 +11,8 @@ namespace SystemCoreMonitor.Core
         public string Theme { get; set; } = "Dark";
         public string ViewMode { get; set; } = "Full";
         public string Language { get; set; } = "es";
-        public bool AlwaysOnTop { get; set; } = false;
-        public bool AutoPowerScheme { get; set; } = false;
         public bool MinimizeToTray { get; set; } = true;
         public bool CloseToTray { get; set; } = true;
-        public bool StartMinimizedToTray { get; set; } = false;
         public bool RunAtStartup { get; set; } = false;
 
         /// <summary>Retention period in days for AI CLI session transcripts (Claude, Gemini). Default: 7 days.</summary>
