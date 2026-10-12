@@ -60,9 +60,11 @@ namespace SystemCoreMonitor.Core
 
             try
             {
-                var proc = Process.GetProcessById(pid);
-                if (proc.SessionId == 0) return false; // System session guard
-                return true;
+                using (var proc = Process.GetProcessById(pid))
+                {
+                    if (proc.SessionId == 0) return false; // System session guard
+                    return true;
+                }
             }
             catch
             {
@@ -160,59 +162,18 @@ namespace SystemCoreMonitor.Core
             }
         }
 
-        private static readonly HashSet<int> _suspendedPids = new HashSet<int>();
-
-        public static bool IsSuspended(int pid)
-        {
-            lock (_suspendedPids)
-            {
-                return _suspendedPids.Contains(pid);
-            }
-        }
-
         public static bool SuspendProcess(int pid)
         {
             string name = string.Empty;
-            try { name = Process.GetProcessById(pid).ProcessName; } catch { }
-            string msg;
-            bool ok = SuspendProcess(pid, name, out msg);
-            if (ok)
-            {
-                lock (_suspendedPids) { _suspendedPids.Add(pid); }
-            }
-            return ok;
+            try { using (var p = Process.GetProcessById(pid)) name = p.ProcessName; } catch { }
+            return SuspendProcess(pid, name, out _);
         }
 
         public static bool ResumeProcess(int pid)
         {
             string name = string.Empty;
-            try { name = Process.GetProcessById(pid).ProcessName; } catch { }
-            string msg;
-            bool ok = ResumeProcess(pid, name, out msg);
-            if (ok)
-            {
-                lock (_suspendedPids) { _suspendedPids.Remove(pid); }
-            }
-            return ok;
-        }
-
-        public static int ResumeAllSuspended()
-        {
-            int count = 0;
-            List<int> pids;
-            lock (_suspendedPids)
-            {
-                pids = new List<int>(_suspendedPids);
-            }
-
-            foreach (var pid in pids)
-            {
-                if (ResumeProcess(pid))
-                {
-                    count++;
-                }
-            }
-            return count;
+            try { using (var p = Process.GetProcessById(pid)) name = p.ProcessName; } catch { }
+            return ResumeProcess(pid, name, out _);
         }
 
         public static bool SetProcessPriority(int pid, ProcessPriorityClass priority, out string message)
@@ -634,13 +595,13 @@ namespace SystemCoreMonitor.Core
             }
         }
 
-        private static DateTime TryGetStartTime(Process p)
+        public static DateTime TryGetStartTime(Process p)
         {
             try { return p.StartTime; }
             catch { return DateTime.MinValue; }
         }
 
-        private static DateTime TryGetStartTime(int pid)
+        public static DateTime TryGetStartTime(int pid)
         {
             try
             {
@@ -675,8 +636,10 @@ namespace SystemCoreMonitor.Core
                 }
 
                 // Fallback to standard Process.MainModule
-                var p = Process.GetProcessById(pid);
-                return p.MainModule != null ? p.MainModule.FileName : null;
+                using (var p = Process.GetProcessById(pid))
+                {
+                    return p.MainModule != null ? p.MainModule.FileName : null;
+                }
             }
             catch
             {

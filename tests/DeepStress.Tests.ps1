@@ -162,17 +162,17 @@ Assert-DeepTest "Handle Leak Stress: 200 consecutive AiAgentCollector.Sample() c
         `$collector = [SystemCoreMonitor.Modules.AiAgentCollector]::new()
         `$proc = [System.Diagnostics.Process]::GetCurrentProcess()
         # Warmup to stabilize JIT compilation, metadata caches, and runtime threadpool
-        for (`$w = 1; `$w -le 40; `$w++) { `$null = `$collector.Sample() }
+        for (`$w = 1; `$w -le 15; `$w++) { `$null = `$collector.Sample() }
         `$proc.Refresh()
         `$h0 = `$proc.HandleCount
-        for (`$i = 1; `$i -le 60; `$i++) {
+        for (`$i = 1; `$i -le 25; `$i++) {
             `$null = `$collector.Sample()
         }
         `$proc.Refresh()
         `$h1 = `$proc.HandleCount
         `$delta = `$h1 - `$h0
         Write-Host "         -> Initial Handles: `$h0, Final: `$h1, Delta: `$delta"
-        exit (`$delta -le 15 ? 0 : 1)
+        exit (`$delta -le 5 ? 0 : 1)
 "@
     $output = pwsh -NoProfile -Command $testScript
     Write-Host $output -ForegroundColor Gray
