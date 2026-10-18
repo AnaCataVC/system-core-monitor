@@ -94,7 +94,14 @@ system-core-monitor/
   SystemCoreMonitor-Setup.exe
   ```
 - **Strict Prohibition on Extra Assets**: NEVER attach `SystemCoreMonitor.exe` (standalone binary) or `System-Core-Monitor-*-Portable.zip` to public GitHub Releases. The standalone executable is compiled strictly as an embedded payload for `SystemCoreMonitor-Setup.exe` and for local test suite execution via reflection (`tests/Metrics.Tests.ps1`), never as an independent release download.
+- **Installer Version Synchronization Gate (Pre-Compilation Invariant)**: BEFORE compiling `SystemCoreMonitor-Setup.exe` via `scripts/Build-Package.ps1` or creating a GitHub Release, you **MUST ALWAYS** update and synchronize the target release version string across all installer files:
+  1. `src/Installer/SetupWindow.xaml` (welcome text and footer status text).
+  2. `src/Installer/SetupWindow.xaml.cs` (Windows Registry `DisplayVersion` value in `RegisterUninstaller`).
+  3. `scripts/Build-Package.ps1` (default `$Version` parameter).
+  4. `docs/command-center-guide.md` (header version).
+  Compiling the installer with stale version strings causes user-facing visual regressions in the setup wizard UI.
 - **Verification Invariant**: All release workflows and subagents (`ami-release-manager`) must verify via `gh release view <tag> --json assets` that exactly 1 asset exists: `SystemCoreMonitor-Setup.exe`.
+
 
 ---
 
