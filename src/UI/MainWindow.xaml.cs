@@ -157,6 +157,7 @@ namespace SystemCoreMonitor.UI
             InitHwndHooks();
             InitAppBranding();
             InitTray();
+            SyncTrayMenuCheckStates();
 
             _timer.Start();
             _ = SampleTelemetryTickAsync();
@@ -167,7 +168,8 @@ namespace SystemCoreMonitor.UI
         {
             try
             {
-                var bloat = await Task.Run(() => BloatDetector.Scan());
+                // Skip slow WinSxS directory walk on initial launch; full scan runs on manual user action
+                var bloat = await Task.Run(() => BloatDetector.Scan(includeComponentStore: false));
                 _viewModel.Storage.UpdateBloat(bloat);
             }
             catch (Exception ex)
@@ -189,6 +191,24 @@ namespace SystemCoreMonitor.UI
             {
                 WmGetMinMaxInfo(hwnd, lParam);
                 handled = true;
+            }
+            else if (msg == NativeMethods.WM_TRAYICON)
+            {
+                int mouseMsg = (int)(lParam.ToInt64() & 0xFFFF);
+                if (mouseMsg == 0x0202 || mouseMsg == 0x0203) // WM_LBUTTONUP or WM_LBUTTONDBLCLK
+                {
+                    TrayMenuRestore_Click(this, new RoutedEventArgs());
+                    handled = true;
+                }
+                else if (mouseMsg == 0x0205 || mouseMsg == 0x007B) // WM_RBUTTONUP or WM_CONTEXTMENU
+                {
+                    SyncTrayMenuCheckStates();
+                    if (FindResource("TrayContextMenu") is System.Windows.Controls.ContextMenu menu)
+                    {
+                        menu.IsOpen = true;
+                    }
+                    handled = true;
+                }
             }
             return IntPtr.Zero;
         }
@@ -277,7 +297,9 @@ namespace SystemCoreMonitor.UI
                 var svcTask = activeTab == _viewModel.Services ? Task.Run(() => _svc.Sample()) : null;
                 var startupTask = activeTab == _viewModel.Startup ? Task.Run(() => _startup.Sample()) : null;
 
-                var accelTask = _config.EnableAcceleratorsMonitoring
+                bool needsAccelerators = _config.EnableAcceleratorsMonitoring &&
+                    (activeTab == _viewModel.Dashboard || activeTab == _viewModel.Accelerators || _isWidgetMode);
+                var accelTask = needsAccelerators
                     ? Task.Run(() => _accelEngine.SampleAllEngines())
                     : null;
 
@@ -324,19 +346,21 @@ namespace SystemCoreMonitor.UI
 
                 // Dispatch remaining ViewModels
                 _viewModel.Dashboard.Update(cpu, mem, disk, net, gpu, npu);
-                _viewModel.Accelerators.Update(gpu, npu);
+                if (needsAccelerators)
+                {
+                    _viewModel.Accelerators.Update(gpu, npu);
+                }
                 if (aiTask != null) _viewModel.AiAgents.Update(await aiTask);
                 if (svcTask != null) _viewModel.Services.Update(await svcTask);
                 if (startupTask != null) _viewModel.Startup.Update(await startupTask);
 
-                TxtWidgetGpu.Text = _config.EnableAcceleratorsMonitoring ? $"{gpu.LoadPercent:F0}%" : "Off";
-                ProgressWidgetGpu.Value = _config.EnableAcceleratorsMonitoring ? gpu.LoadPercent : 0;
+                TxtWidgetGpu.Text = needsAccelerators ? $"{gpu.LoadPercent:F0}%" : "Off";
+                ProgressWidgetGpu.Value = needsAccelerators ? gpu.LoadPercent : 0;
 
-                // Uptime
-                var hw = _hw.Sample();
-                TxtUptime.Text = $"Uptime: {hw.UptimeDisplay}";
+                // Uptime (0ms GetTickCount64 lookup without polling battery state)
+                TxtUptime.Text = $"Uptime: {HardwareCollector.GetUptimeDisplay()}";
 
-                string trayGpuText = _config.EnableAcceleratorsMonitoring ? $" | GPU: {gpu.LoadPercent:F0}%" : "";
+                string trayGpuText = needsAccelerators ? $" | GPU: {gpu.LoadPercent:F0}%" : "";
                 _trayManager.UpdateTooltip($"System Core Monitor\nCPU: {cpu.LoadPercent:F0}% | RAM: {mem.LoadPercent:F0}%{trayGpuText}");
             }
             catch (Exception ex)
@@ -567,6 +591,32 @@ namespace SystemCoreMonitor.UI
 
         #region Tray Context Menu Handlers
 
+        private void SyncTrayMenuCheckStates()
+        {
+            if (FindResource("TrayContextMenu") is System.Windows.Controls.ContextMenu menu)
+            {
+                foreach (var item in menu.Items)
+                {
+                    if (item is System.Windows.Controls.MenuItem subMenu && subMenu.Name == "TrayMenuSettings")
+                    {
+                        foreach (var sub in subMenu.Items)
+                        {
+                            if (sub is System.Windows.Controls.MenuItem mi)
+                            {
+                                switch (mi.Name)
+                                {
+                                    case "TrayMenuMinToTray": mi.IsChecked = _config.MinimizeToTray; break;
+                                    case "TrayMenuCloseToTray": mi.IsChecked = _config.CloseToTray; break;
+                                    case "TrayMenuRunAtStartup": mi.IsChecked = _config.RunAtStartup; break;
+                                    case "TrayMenuAlwaysOnTop": mi.IsChecked = _isPinnedTop; break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         private void TrayMenuRestore_Click(object sender, RoutedEventArgs e)
         {
             Show();
@@ -574,45 +624,31 @@ namespace SystemCoreMonitor.UI
             Activate();
         }
 
-        private void BtnPlanSaver_Click(object sender, RoutedEventArgs e) => PowerPlanManager.SetScheme(PowerSchemeMode.PowerSaver);
-        private void BtnPlanBalanced_Click(object sender, RoutedEventArgs e) => PowerPlanManager.SetScheme(PowerSchemeMode.Balanced);
-        private void BtnPlanHighPerf_Click(object sender, RoutedEventArgs e) => PowerPlanManager.SetScheme(PowerSchemeMode.HighPerformance);
-        private void BtnOptimize_Click(object sender, RoutedEventArgs e) => Task.Run(() => MemoryOptimizer.OptimizeWorkingSet(out _));
-        private void BtnCleanTemp_Click(object sender, RoutedEventArgs e) => Task.Run(() => SafeTempCleaner.CleanDeepStorage(false));
-        private void BtnFlushDns_Click(object sender, RoutedEventArgs e)
-        {
-            Task.Run(() =>
-            {
-                bool ok = NetworkCollector.FlushDnsCache();
-                Dispatcher.Invoke(() =>
-                {
-                    if (ok)
-                    {
-                        ShowToast(LocalizationManager.Get("ToastDnsFlushed"), NotificationType.Success);
-                    }
-                    else
-                    {
-                        ShowToast(LocalizationManager.Get("ToastDnsFailed"), NotificationType.Error);
-                    }
-                });
-            });
-        }
+        private void BtnPlanSaver_Click(object sender, RoutedEventArgs e) => _viewModel.Dashboard.SwitchPowerPlanCommand.Execute("Saver");
+        private void BtnPlanBalanced_Click(object sender, RoutedEventArgs e) => _viewModel.Dashboard.SwitchPowerPlanCommand.Execute("Balanced");
+        private void BtnPlanHighPerf_Click(object sender, RoutedEventArgs e) => _viewModel.Dashboard.SwitchPowerPlanCommand.Execute("HighPerf");
+        private void BtnOptimize_Click(object sender, RoutedEventArgs e) => _viewModel.Dashboard.OptimizeMemoryCommand.Execute(null);
+        private void BtnCleanTemp_Click(object sender, RoutedEventArgs e) => _viewModel.Dashboard.CleanTempCommand.Execute(null);
+        private void BtnFlushDns_Click(object sender, RoutedEventArgs e) => _viewModel.Dashboard.FlushDnsCommand.Execute(null);
         private void TrayMenuMinToTray_Click(object sender, RoutedEventArgs e)
         {
             _config.MinimizeToTray = !_config.MinimizeToTray;
             ConfigManager.Save(_config);
+            SyncTrayMenuCheckStates();
         }
 
         private void TrayMenuCloseToTray_Click(object sender, RoutedEventArgs e)
         {
             _config.CloseToTray = !_config.CloseToTray;
             ConfigManager.Save(_config);
+            SyncTrayMenuCheckStates();
         }
 
         private void TrayMenuRunAtStartup_Click(object sender, RoutedEventArgs e)
         {
             _config.RunAtStartup = !_config.RunAtStartup;
             ConfigManager.Save(_config);
+            SyncTrayMenuCheckStates();
         }
         private void BtnTaskMgr_Click(object sender, RoutedEventArgs e) => ToolLauncher.StartTaskManager();
         private void BtnResMon_Click(object sender, RoutedEventArgs e) => ToolLauncher.StartResourceMonitor();

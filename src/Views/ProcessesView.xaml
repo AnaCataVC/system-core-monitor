@@ -113,14 +113,62 @@
                 </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate>
-                        <Border Padding="12,8" Margin="0,2" CornerRadius="8" Background="{DynamicResource BgControl}">
+                        <Border Padding="12,8" Margin="0,2" CornerRadius="8" Background="{DynamicResource BgControl}" Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                            <Border.ContextMenu>
+                                <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+                                    <MenuItem Header="🔍 Inspector de Proceso (360°)"
+                                              Command="{Binding InspectProcessCommand}"
+                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                              FontWeight="SemiBold"/>
+                                    <MenuItem Header="📂 Abrir ubicación del archivo"
+                                              Command="{Binding OpenFolderCommand}"
+                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    <MenuItem Header="🌐 Buscar proceso en línea"
+                                              Command="{Binding SearchOnlineCommand}"
+                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    <Separator/>
+                                    <MenuItem Header="⏸ Suspender proceso (Congelar hilos)"
+                                              Command="{Binding SuspendProcessCommand}"
+                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    <MenuItem Header="▶ Reanudar proceso"
+                                              Command="{Binding ResumeProcessCommand}"
+                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    <MenuItem Header="⚡ Prioridad de CPU">
+                                        <MenuItem Header="🔥 Alta (High)"
+                                                  Command="{Binding SetPriorityHighCommand}"
+                                                  CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                        <MenuItem Header="🔼 Por encima de lo normal (Above Normal)"
+                                                  Command="{Binding SetPriorityAboveNormalCommand}"
+                                                  CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                        <MenuItem Header="⚖️ Normal"
+                                                  Command="{Binding SetPriorityNormalCommand}"
+                                                  CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                        <MenuItem Header="🔽 Por debajo de lo normal (Below Normal)"
+                                                  Command="{Binding SetPriorityBelowNormalCommand}"
+                                                  CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                        <MenuItem Header="💤 Baja / Inactiva (Idle)"
+                                                  Command="{Binding SetPriorityIdleCommand}"
+                                                  CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    </MenuItem>
+                                    <Separator/>
+                                    <MenuItem Header="🔴 Finalizar proceso (Cierre escalado)"
+                                              Command="{Binding TerminateProcessCommand}"
+                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                </ContextMenu>
+                            </Border.ContextMenu>
                             <DockPanel LastChildFill="True">
                                 <!-- Action Buttons on the Right -->
                                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="14,0,0,0">
+                                    <Button Style="{StaticResource PillActionButtonStyle}"
+                                            Command="{Binding DataContext.InspectProcessCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"
+                                            Padding="10,5" Margin="0,0,6,0" ToolTip="Ver detalles de memoria, hilos, ruta y firma (Inspector 360°)">
+                                        <TextBlock Text="Detalles" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                    </Button>
                                     <Button Style="{StaticResource PillActionButtonStyle}" 
                                             Command="{Binding DataContext.TerminateProcessCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"
-                                            Background="#15EF4444" Foreground="#EF4444" Padding="10,5" MinWidth="68" ToolTip="Finalizar proceso de forma segura">
+                                            Background="#15EF4444" Foreground="#EF4444" Padding="10,5" MinWidth="68" ToolTip="Cerrar de forma segura o terminar árbol de procesos si no responde">
                                         <TextBlock Text="Cerrar" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center"/>
                                     </Button>
                                 </StackPanel>
@@ -145,7 +193,7 @@
                                             <TextBlock Text="{Binding DisplayTitle}" FontSize="13.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" TextTrimming="CharacterEllipsis" MaxWidth="380"/>
                                             <TextBlock Text="{Binding Id, StringFormat='{} (PID {0})'}" FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="6,0,0,0" VerticalAlignment="Center"/>
                                         </StackPanel>
-                                        <TextBlock Text="{Binding Name}" FontSize="11.5" Foreground="{DynamicResource TextSecondary}" TextTrimming="CharacterEllipsis" MaxWidth="380"/>
+                                        <TextBlock Text="{Binding SubtitleText}" FontSize="11.5" Foreground="{DynamicResource TextSecondary}" TextTrimming="CharacterEllipsis" MaxWidth="380"/>
                                     </StackPanel>
                                 </StackPanel>
                             </DockPanel>

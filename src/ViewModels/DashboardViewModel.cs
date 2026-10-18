@@ -78,15 +78,16 @@ namespace SystemCoreMonitor.ViewModels
             OptimizeMemoryCommand = new AsyncRelayCommand(async () =>
             {
                 ShowProgressRequested?.Invoke(LocalizationManager.Get("ActionOptimizingRam"));
-                double freedMB = await Task.Run(() => MemoryOptimizer.OptimizeWorkingSet(out _));
-                ShowToastRequested?.Invoke(string.Format(LocalizationManager.Get("ToastMemoryOptimized"), freedMB), NotificationType.Success);
+                int trimmed = 0;
+                double freedMB = await Task.Run(() => MemoryOptimizer.OptimizeWorkingSet(out trimmed));
+                ShowToastRequested?.Invoke(string.Format(LocalizationManager.Get("ToastMemoryOptimized"), freedMB, trimmed), NotificationType.Success);
             });
 
             CleanTempCommand = new AsyncRelayCommand(async () =>
             {
                 ShowProgressRequested?.Invoke(LocalizationManager.Get("ActionCleaningTemp"));
                 var result = await Task.Run(() => SafeTempCleaner.CleanDeepStorage(false));
-                ShowToastRequested?.Invoke(string.Format(LocalizationManager.Get("ToastTempCleaned"), result.HumanSize), NotificationType.Success);
+                ShowToastRequested?.Invoke(string.Format(LocalizationManager.Get("ToastTempCleaned"), result.HumanSize, result.FilesDeleted), NotificationType.Success);
             });
 
             FlushDnsCommand = new AsyncRelayCommand(async () =>

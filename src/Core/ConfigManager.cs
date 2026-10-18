@@ -1,7 +1,9 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Win32;
 
 namespace SystemCoreMonitor.Core
 {
@@ -31,6 +33,9 @@ namespace SystemCoreMonitor.Core
 
     public static class ConfigManager
     {
+        private const string StartupRegistryKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
+        private const string StartupValueName = "SystemCoreMonitor";
+
         private static readonly string LegacyConfigDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "SimplePCMonitor"
@@ -77,10 +82,41 @@ namespace SystemCoreMonitor.Core
                 string json = JsonSerializer.Serialize(config, AppConfigJsonContext.Default.AppConfig);
                 File.WriteAllText(ConfigPath, json);
                 Current = config;
+                SyncRunAtStartup(config.RunAtStartup);
             }
             catch (Exception ex)
             {
                 CrashLogger.LogException("ConfigManager.Save", ex, false);
+            }
+        }
+
+        public static void SyncRunAtStartup(bool enable)
+        {
+            try
+            {
+                using var key = Registry.CurrentUser.OpenSubKey(StartupRegistryKey, writable: true);
+                if (key == null) return;
+
+                if (enable)
+                {
+                    using var currentProc = Process.GetCurrentProcess();
+                    string? exePath = currentProc.MainModule?.FileName;
+                    if (!string.IsNullOrEmpty(exePath) && File.Exists(exePath))
+                    {
+                        key.SetValue(StartupValueName, $"\"{exePath}\"");
+                    }
+                }
+                else
+                {
+                    if (key.GetValue(StartupValueName) != null)
+                    {
+                        key.DeleteValue(StartupValueName, throwOnMissingValue: false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                CrashLogger.LogException("ConfigManager.SyncRunAtStartup", ex, false);
             }
         }
 

@@ -183,6 +183,7 @@ namespace SystemCoreMonitor.Models
     public class ProcessMetric
     {
         public int Id { get; set; }
+        public DateTime StartTime { get; set; }
         public string Name { get; set; }
         public string FriendlyName { get; set; }
         public string CompanyName { get; set; }

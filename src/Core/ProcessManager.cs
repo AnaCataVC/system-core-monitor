@@ -181,16 +181,18 @@ namespace SystemCoreMonitor.Core
             message = string.Empty;
             try
             {
-                var proc = Process.GetProcessById(pid);
-                if (IsProtected(proc.ProcessName))
+                using (var proc = Process.GetProcessById(pid))
                 {
-                    message = string.Format("'{0}' is a system-critical process and its priority cannot be altered.", proc.ProcessName);
-                    return false;
-                }
+                    if (IsProtected(proc.ProcessName))
+                    {
+                        message = string.Format("'{0}' is a system-critical process and its priority cannot be altered.", proc.ProcessName);
+                        return false;
+                    }
 
-                proc.PriorityClass = priority;
-                message = string.Format("Priority for '{0}' set to {1}.", proc.ProcessName, priority);
-                return true;
+                    proc.PriorityClass = priority;
+                    message = string.Format("Priority for '{0}' set to {1}.", proc.ProcessName, priority);
+                    return true;
+                }
             }
             catch (Exception ex)
             {
@@ -232,156 +234,165 @@ namespace SystemCoreMonitor.Core
             int currentSessionId = -1;
             try { currentSessionId = Process.GetCurrentProcess().SessionId; } catch { }
 
-            Process proc = null;
+            Process? proc = null;
             try
-            {
-                proc = Process.GetProcessById(pid);
-                if (proc.HasExited)
-                {
-                    return ProcessCloseResult.ClosedGracefully;
-                }
-
-                if (string.IsNullOrEmpty(processName))
-                {
-                    try { processName = proc.ProcessName; } catch { }
-                }
-
-                if (IsProtected(processName))
-                {
-                    return ProcessCloseResult.ProtectedProcess;
-                }
-
-                if (currentSessionId > 0 && proc.SessionId == 0)
-                {
-                    return ProcessCloseResult.ProtectedProcess;
-                }
-            }
-            catch (ArgumentException)
-            {
-                return ProcessCloseResult.ClosedGracefully; // Already dead
-            }
-            catch (Exception)
-            {
-                return ProcessCloseResult.AccessDenied;
-            }
-
-            IntPtr hWnd = IntPtr.Zero;
-            try { hWnd = proc.MainWindowHandle; } catch { }
-
-            // Support Windows 11 execution alias wrappers (e.g. Notepad, Terminal, Store app stubs)
-            var childWindows = new List<IntPtr>();
-            try
-            {
-                IntPtr hSnap = NativeMethods.CreateToolhelp32Snapshot(NativeMethods.TH32CS_SNAPPROCESS, 0);
-                if (hSnap != IntPtr.Zero && hSnap != new IntPtr(-1))
-                {
-                    try
-                    {
-                        var pe = new NativeMethods.PROCESSENTRY32();
-                        pe.dwSize = (uint)Marshal.SizeOf(typeof(NativeMethods.PROCESSENTRY32));
-                        if (NativeMethods.Process32First(hSnap, ref pe))
-                        {
-                            do
-                            {
-                                if (pe.th32ParentProcessID == pid)
-                                {
-                                    try
-                                    {
-                                        var cp = Process.GetProcessById((int)pe.th32ProcessID);
-                                        if (cp.MainWindowHandle != IntPtr.Zero)
-                                        {
-                                            childWindows.Add(cp.MainWindowHandle);
-                                        }
-                                    }
-                                    catch { }
-                                }
-                            } while (NativeMethods.Process32Next(hSnap, ref pe));
-                        }
-                    }
-                    finally
-                    {
-                        NativeMethods.CloseHandle(hSnap);
-                    }
-                }
-            }
-            catch { }
-
-            // Phase 1: Dispatch graceful close signal
-            if (hWnd != IntPtr.Zero || childWindows.Count > 0)
             {
                 try
                 {
-                    proc.CloseMainWindow();
-                    if (hWnd != IntPtr.Zero)
+                    proc = Process.GetProcessById(pid);
+                    if (proc.HasExited)
                     {
-                        NativeMethods.PostMessage(hWnd, NativeMethods.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+                        return ProcessCloseResult.ClosedGracefully;
                     }
-                    foreach (var chWnd in childWindows)
+
+                    if (string.IsNullOrEmpty(processName))
                     {
-                        NativeMethods.PostMessage(chWnd, NativeMethods.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+                        try { processName = proc.ProcessName; } catch { }
+                    }
+
+                    if (IsProtected(processName))
+                    {
+                        return ProcessCloseResult.ProtectedProcess;
+                    }
+
+                    if (currentSessionId > 0 && proc.SessionId == 0)
+                    {
+                        return ProcessCloseResult.ProtectedProcess;
+                    }
+                }
+                catch (ArgumentException)
+                {
+                    return ProcessCloseResult.ClosedGracefully; // Already dead
+                }
+                catch (Exception)
+                {
+                    return ProcessCloseResult.AccessDenied;
+                }
+
+                IntPtr hWnd = IntPtr.Zero;
+                try { hWnd = proc.MainWindowHandle; } catch { }
+
+                // Support Windows 11 execution alias wrappers (e.g. Notepad, Terminal, Store app stubs)
+                var childWindows = new List<IntPtr>();
+                try
+                {
+                    IntPtr hSnap = NativeMethods.CreateToolhelp32Snapshot(NativeMethods.TH32CS_SNAPPROCESS, 0);
+                    if (hSnap != IntPtr.Zero && hSnap != new IntPtr(-1))
+                    {
+                        try
+                        {
+                            var pe = new NativeMethods.PROCESSENTRY32();
+                            pe.dwSize = (uint)Marshal.SizeOf(typeof(NativeMethods.PROCESSENTRY32));
+                            if (NativeMethods.Process32First(hSnap, ref pe))
+                            {
+                                do
+                                {
+                                    if (pe.th32ParentProcessID == pid)
+                                    {
+                                        try
+                                        {
+                                            using (var cp = Process.GetProcessById((int)pe.th32ProcessID))
+                                            {
+                                                if (cp.MainWindowHandle != IntPtr.Zero)
+                                                {
+                                                    childWindows.Add(cp.MainWindowHandle);
+                                                }
+                                            }
+                                        }
+                                        catch { }
+                                    }
+                                } while (NativeMethods.Process32Next(hSnap, ref pe));
+                            }
+                        }
+                        finally
+                        {
+                            NativeMethods.CloseHandle(hSnap);
+                        }
                     }
                 }
                 catch { }
-            }
-            else
-            {
-                // CLI / Console process: Try AttachConsole + GenerateConsoleCtrlEvent under sync lock
-                bool signalSent = false;
-                lock (_consoleLock)
+
+                // Phase 1: Dispatch graceful close signal
+                if (hWnd != IntPtr.Zero || childWindows.Count > 0)
                 {
                     try
                     {
-                        if (NativeMethods.AttachConsole((uint)pid))
+                        proc.CloseMainWindow();
+                        if (hWnd != IntPtr.Zero)
                         {
-                            try
-                            {
-                                NativeMethods.GenerateConsoleCtrlEvent(NativeMethods.CTRL_C_EVENT, (uint)pid);
-                                signalSent = true;
-                            }
-                            finally
-                            {
-                                NativeMethods.FreeConsole();
-                            }
+                            NativeMethods.PostMessage(hWnd, NativeMethods.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+                        }
+                        foreach (var chWnd in childWindows)
+                        {
+                            NativeMethods.PostMessage(chWnd, NativeMethods.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
                         }
                     }
                     catch { }
                 }
-
-                if (!signalSent)
+                else
                 {
-                    try { proc.CloseMainWindow(); } catch { }
+                    // CLI / Console process: Try AttachConsole + GenerateConsoleCtrlEvent under sync lock
+                    bool signalSent = false;
+                    lock (_consoleLock)
+                    {
+                        try
+                        {
+                            if (NativeMethods.AttachConsole((uint)pid))
+                            {
+                                try
+                                {
+                                    NativeMethods.GenerateConsoleCtrlEvent(NativeMethods.CTRL_C_EVENT, (uint)pid);
+                                    signalSent = true;
+                                }
+                                finally
+                                {
+                                    NativeMethods.FreeConsole();
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+
+                    if (!signalSent)
+                    {
+                        try { proc.CloseMainWindow(); } catch { }
+                    }
+                }
+
+                // Await non-blocking timeout
+                await Task.Delay(timeoutMs).ConfigureAwait(false);
+
+                try
+                {
+                    proc.Refresh();
+                    if (proc.HasExited)
+                    {
+                        return ProcessCloseResult.ClosedGracefully;
+                    }
+
+                    // If process is still alive, check if its main window disappeared (minimized to System Tray)
+                    IntPtr postHwnd = IntPtr.Zero;
+                    try { postHwnd = proc.MainWindowHandle; } catch { }
+
+                    if (hWnd != IntPtr.Zero && postHwnd == IntPtr.Zero)
+                    {
+                        return ProcessCloseResult.MinimizedToTray;
+                    }
+
+                    return ProcessCloseResult.StillRunning;
+                }
+                catch (InvalidOperationException)
+                {
+                    return ProcessCloseResult.ClosedGracefully; // Exited during check
+                }
+                catch
+                {
+                    return ProcessCloseResult.StillRunning;
                 }
             }
-
-            // Await non-blocking timeout
-            await Task.Delay(timeoutMs).ConfigureAwait(false);
-
-            try
+            finally
             {
-                proc.Refresh();
-                if (proc.HasExited)
-                {
-                    return ProcessCloseResult.ClosedGracefully;
-                }
-
-                // If process is still alive, check if its main window disappeared (minimized to System Tray)
-                IntPtr postHwnd = IntPtr.Zero;
-                try { postHwnd = proc.MainWindowHandle; } catch { }
-
-                if (hWnd != IntPtr.Zero && postHwnd == IntPtr.Zero)
-                {
-                    return ProcessCloseResult.MinimizedToTray;
-                }
-
-                return ProcessCloseResult.StillRunning;
-            }
-            catch (InvalidOperationException)
-            {
-                return ProcessCloseResult.ClosedGracefully; // Exited during check
-            }
-            catch
-            {
-                return ProcessCloseResult.StillRunning;
+                proc?.Dispose();
             }
         }
 
@@ -457,17 +468,19 @@ namespace SystemCoreMonitor.Core
 
             try
             {
-                var proc = Process.GetProcessById(pid);
-                if (proc.SessionId == 0)
+                using (var proc = Process.GetProcessById(pid))
                 {
-                    message = string.Format("'{0}' belongs to System Session 0 and cannot be terminated.", processName);
-                    return false;
-                }
+                    if (proc.SessionId == 0)
+                    {
+                        message = string.Format("'{0}' belongs to System Session 0 and cannot be terminated.", processName);
+                        return false;
+                    }
 
-                proc.Kill();
-                proc.WaitForExit(1500);
-                message = string.Format("Process '{0}' (PID: {1}) was terminated successfully.", processName, pid);
-                return true;
+                    proc.Kill();
+                    proc.WaitForExit(1500);
+                    message = string.Format("Process '{0}' (PID: {1}) was terminated successfully.", processName, pid);
+                    return true;
+                }
             }
             catch (Exception ex)
             {
@@ -489,9 +502,11 @@ namespace SystemCoreMonitor.Core
             DateTime rootStartTime = DateTime.MinValue;
             try
             {
-                var rootProc = Process.GetProcessById(rootPid);
-                rootName = rootProc.ProcessName;
-                rootStartTime = TryGetStartTime(rootProc);
+                using (var rootProc = Process.GetProcessById(rootPid))
+                {
+                    rootName = rootProc.ProcessName;
+                    rootStartTime = TryGetStartTime(rootProc);
+                }
             }
             catch { }
 
@@ -546,12 +561,14 @@ namespace SystemCoreMonitor.Core
                 int pid = treePids[i];
                 try
                 {
-                    var p = Process.GetProcessById(pid);
-                    if (!IsProtected(p.ProcessName) && p.SessionId != 0 && pid > 4)
+                    using (var p = Process.GetProcessById(pid))
                     {
-                        p.Kill();
-                        p.WaitForExit(500);
-                        killedCount++;
+                        if (!IsProtected(p.ProcessName) && p.SessionId != 0 && pid > 4)
+                        {
+                            p.Kill();
+                            p.WaitForExit(500);
+                            killedCount++;
+                        }
                     }
                 }
                 catch { }
@@ -804,88 +821,106 @@ namespace SystemCoreMonitor.Core
 
             try
             {
-                var p = Process.GetProcessById(pid);
-                info.Name = p.ProcessName;
-                info.IsProtected = IsProtected(p.ProcessName);
-
-                try { info.WindowTitle = p.MainWindowTitle; } catch { }
-                try { info.IsResponding = p.Responding; } catch { }
-                try { info.PriorityClass = p.PriorityClass.ToString(); } catch { }
-                try { info.ThreadCount = p.Threads.Count; } catch { }
-                try { info.HandleCount = p.HandleCount; } catch { }
-
-                // Memory metrics
-                try
+                using (var p = Process.GetProcessById(pid))
                 {
-                    info.WorkingSetMB = Math.Round((double)p.WorkingSet64 / (1024.0 * 1024.0), 1);
-                    info.PeakWorkingSetMB = Math.Round((double)p.PeakWorkingSet64 / (1024.0 * 1024.0), 1);
-                    info.PrivateMemoryMB = Math.Round((double)p.PrivateMemorySize64 / (1024.0 * 1024.0), 1);
-                    info.PagedMemoryMB = Math.Round((double)p.PagedMemorySize64 / (1024.0 * 1024.0), 1);
-                    info.VirtualMemoryMB = Math.Round((double)p.VirtualMemorySize64 / (1024.0 * 1024.0), 1);
-                }
-                catch { }
+                    info.Name = p.ProcessName;
+                    info.IsProtected = IsProtected(p.ProcessName);
 
-                // Start time & Uptime
-                try
-                {
-                    DateTime start = p.StartTime;
-                    info.StartTimeDisplay = start.ToString("yyyy-MM-dd HH:mm:ss");
-                    TimeSpan uptime = DateTime.Now - start;
-                    if (uptime.TotalDays >= 1)
-                        info.UptimeDisplay = string.Format("{0}d {1}h {2}m {3}s", (int)uptime.TotalDays, uptime.Hours, uptime.Minutes, uptime.Seconds);
-                    else if (uptime.TotalHours >= 1)
-                        info.UptimeDisplay = string.Format("{0}h {1}m {2}s", uptime.Hours, uptime.Minutes, uptime.Seconds);
-                    else
-                        info.UptimeDisplay = string.Format("{0}m {1}s", uptime.Minutes, uptime.Seconds);
-                }
-                catch
-                {
-                    info.StartTimeDisplay = "System / Protected";
-                    info.UptimeDisplay = "N/A";
-                }
-
-                // Architecture
-                try
-                {
-                    if (!Environment.Is64BitOperatingSystem)
+                    try
                     {
-                        info.Architecture = "32-bit (x86)";
-                    }
-                    else
-                    {
-                        IntPtr hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
-                        if (hProcess != IntPtr.Zero)
+                        IntPtr hMain = p.MainWindowHandle;
+                        if (hMain != IntPtr.Zero)
                         {
-                            try
+                            bool isHung = NativeMethods.IsHungAppWindow(hMain);
+                            info.IsResponding = !isHung;
+                            if (!isHung)
                             {
-                                bool isWow64;
-                                if (IsWow64Process(hProcess, out isWow64))
-                                {
-                                    info.Architecture = isWow64 ? "32-bit (x86)" : "64-bit (x64)";
-                                }
+                                info.WindowTitle = p.MainWindowTitle;
                             }
-                            finally
+                        }
+                        else
+                        {
+                            info.IsResponding = true;
+                        }
+                    }
+                    catch { }
+                    try { info.PriorityClass = p.PriorityClass.ToString(); } catch { }
+                    try { info.ThreadCount = p.Threads.Count; } catch { }
+                    try { info.HandleCount = p.HandleCount; } catch { }
+
+                    // Memory metrics
+                    try
+                    {
+                        info.WorkingSetMB = Math.Round((double)p.WorkingSet64 / (1024.0 * 1024.0), 1);
+                        info.PeakWorkingSetMB = Math.Round((double)p.PeakWorkingSet64 / (1024.0 * 1024.0), 1);
+                        info.PrivateMemoryMB = Math.Round((double)p.PrivateMemorySize64 / (1024.0 * 1024.0), 1);
+                        info.PagedMemoryMB = Math.Round((double)p.PagedMemorySize64 / (1024.0 * 1024.0), 1);
+                        info.VirtualMemoryMB = Math.Round((double)p.VirtualMemorySize64 / (1024.0 * 1024.0), 1);
+                    }
+                    catch { }
+
+                    // Start time & Uptime
+                    try
+                    {
+                        DateTime start = p.StartTime;
+                        info.StartTimeDisplay = start.ToString("yyyy-MM-dd HH:mm:ss");
+                        TimeSpan uptime = DateTime.Now - start;
+                        if (uptime.TotalDays >= 1)
+                            info.UptimeDisplay = string.Format("{0}d {1}h {2}m {3}s", (int)uptime.TotalDays, uptime.Hours, uptime.Minutes, uptime.Seconds);
+                        else if (uptime.TotalHours >= 1)
+                            info.UptimeDisplay = string.Format("{0}h {1}m {2}s", uptime.Hours, uptime.Minutes, uptime.Seconds);
+                        else
+                            info.UptimeDisplay = string.Format("{0}m {1}s", uptime.Minutes, uptime.Seconds);
+                    }
+                    catch
+                    {
+                        info.StartTimeDisplay = "System / Protected";
+                        info.UptimeDisplay = "N/A";
+                    }
+
+                    // Architecture
+                    try
+                    {
+                        if (!Environment.Is64BitOperatingSystem)
+                        {
+                            info.Architecture = "32-bit (x86)";
+                        }
+                        else
+                        {
+                            IntPtr hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+                            if (hProcess != IntPtr.Zero)
                             {
-                                CloseHandle(hProcess);
+                                try
+                                {
+                                    bool isWow64;
+                                    if (IsWow64Process(hProcess, out isWow64))
+                                    {
+                                        info.Architecture = isWow64 ? "32-bit (x86)" : "64-bit (x64)";
+                                    }
+                                }
+                                finally
+                                {
+                                    CloseHandle(hProcess);
+                                }
                             }
                         }
                     }
-                }
-                catch { }
+                    catch { }
 
-                // File version details
-                try
-                {
-                    if (!string.IsNullOrEmpty(info.ExecutablePath) && File.Exists(info.ExecutablePath))
+                    // File version details
+                    try
                     {
-                        var fvi = FileVersionInfo.GetVersionInfo(info.ExecutablePath);
-                        if (!string.IsNullOrEmpty(fvi.FileDescription)) info.Description = fvi.FileDescription;
-                        if (!string.IsNullOrEmpty(fvi.ProductVersion)) info.ProductVersion = fvi.ProductVersion;
-                        if (!string.IsNullOrEmpty(fvi.LegalCopyright)) info.Copyright = fvi.LegalCopyright;
-                        if (!string.IsNullOrEmpty(fvi.FileVersion)) info.FileVersion = fvi.FileVersion;
+                        if (!string.IsNullOrEmpty(info.ExecutablePath) && File.Exists(info.ExecutablePath))
+                        {
+                            var fvi = FileVersionInfo.GetVersionInfo(info.ExecutablePath);
+                            if (!string.IsNullOrEmpty(fvi.FileDescription)) info.Description = fvi.FileDescription;
+                            if (!string.IsNullOrEmpty(fvi.ProductVersion)) info.ProductVersion = fvi.ProductVersion;
+                            if (!string.IsNullOrEmpty(fvi.LegalCopyright)) info.Copyright = fvi.LegalCopyright;
+                            if (!string.IsNullOrEmpty(fvi.FileVersion)) info.FileVersion = fvi.FileVersion;
+                        }
                     }
+                    catch { }
                 }
-                catch { }
             }
             catch { }
 

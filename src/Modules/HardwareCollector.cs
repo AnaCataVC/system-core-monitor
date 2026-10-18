@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.Win32;
 using SystemCoreMonitor.Core;
 using SystemCoreMonitor.Models;
@@ -111,9 +111,7 @@ namespace SystemCoreMonitor.Modules
                 }
             }
 
-            ulong ticks = NativeMethods.GetTickCount64();
-            TimeSpan uptime = TimeSpan.FromMilliseconds(ticks);
-            string uptimeDisplay = string.Format("{0}d {1}h {2}m", uptime.Days, uptime.Hours, uptime.Minutes);
+            string uptimeDisplay = GetUptimeDisplay();
 
             return new HardwareMetric
             {
@@ -129,6 +127,13 @@ namespace SystemCoreMonitor.Modules
                 PowerSource    = powerSource,
                 UptimeDisplay  = uptimeDisplay
             };
+        }
+
+        public static string GetUptimeDisplay()
+        {
+            ulong ticks = NativeMethods.GetTickCount64();
+            TimeSpan uptime = TimeSpan.FromMilliseconds(ticks);
+            return string.Format("{0}d {1}h {2}m", uptime.Days, uptime.Hours, uptime.Minutes);
         }
     }
 }

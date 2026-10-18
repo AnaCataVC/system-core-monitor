@@ -22,7 +22,7 @@ namespace SystemCoreMonitor.Core
         public const string ActionLaunchTool    = "LaunchTool";
         public const string ActionInformational = "Informational";
 
-        public static List<BloatFinding> Scan()
+        public static List<BloatFinding> Scan(bool includeComponentStore = true)
         {
             var findings = new List<BloatFinding>();
 
@@ -30,7 +30,10 @@ namespace SystemCoreMonitor.Core
             try { DetectBuildCaches(findings); } catch (Exception ex) { CrashLogger.LogException("BloatDetector.BuildCaches", ex, false); }
             try { DetectRecycleBin(findings); } catch (Exception ex) { CrashLogger.LogException("BloatDetector.RecycleBin", ex, false); }
             try { DetectSystemFiles(findings); } catch (Exception ex) { CrashLogger.LogException("BloatDetector.SystemFiles", ex, false); }
-            try { DetectComponentStore(findings); } catch (Exception ex) { CrashLogger.LogException("BloatDetector.ComponentStore", ex, false); }
+            if (includeComponentStore)
+            {
+                try { DetectComponentStore(findings); } catch (Exception ex) { CrashLogger.LogException("BloatDetector.ComponentStore", ex, false); }
+            }
 
             foreach (var finding in findings)
             {

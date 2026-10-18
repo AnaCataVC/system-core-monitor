@@ -150,6 +150,7 @@ namespace SystemCoreMonitor.Modules
                         resultList.Add(new ProcessMetric
                         {
                             Id              = cand.Id,
+                            StartTime       = ProcessManager.TryGetStartTime(p),
                             Name            = cand.Name,
                             FriendlyName    = meta.FriendlyName,
                             CompanyName     = meta.CompanyName,

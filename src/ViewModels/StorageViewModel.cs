@@ -46,7 +46,7 @@ namespace SystemCoreMonitor.ViewModels
             {
                 ShowProgressRequested?.Invoke(LocalizationManager.Get("ActionCleaningTemp"));
                 var res = await Task.Run(() => SafeTempCleaner.CleanDeepStorage(false));
-                ShowToastRequested?.Invoke(string.Format(LocalizationManager.Get("ToastTempCleaned"), res.HumanSize), NotificationType.Success);
+                ShowToastRequested?.Invoke(string.Format(LocalizationManager.Get("ToastTempCleaned"), res.HumanSize, res.FilesDeleted), NotificationType.Success);
             });
 
             EmptyRecycleBinCommand = new AsyncRelayCommand(async () =>
@@ -61,9 +61,19 @@ namespace SystemCoreMonitor.ViewModels
                 if (finding == null) return;
                 if (finding.ActionKind == "SafeDelete")
                 {
-                    ShowProgressRequested?.Invoke(string.Format("Limpiando caché {0}...", finding.Category));
-                    var res = await Task.Run(() => BloatDetector.DeleteWhitelistedCache(finding.Path));
-                    ShowToastRequested?.Invoke(string.Format(LocalizationManager.Get("ToastTempCleaned"), res.HumanSize), NotificationType.Success);
+                    if (finding.Category == "RecycleBin")
+                    {
+                        ShowProgressRequested?.Invoke(LocalizationManager.Get("ActionEmptyingRecycleBin"));
+                        await Task.Run(() => NativeMethods.SHEmptyRecycleBin(IntPtr.Zero, null, NativeMethods.SHERB_NOCONFIRMATION | NativeMethods.SHERB_NOPROGRESSUI));
+                        BloatFindings.Remove(finding);
+                        ShowToastRequested?.Invoke(LocalizationManager.Get("ToastRecycleBinEmptied"), NotificationType.Success);
+                    }
+                    else
+                    {
+                        ShowProgressRequested?.Invoke(string.Format("Limpiando caché {0}...", finding.Category));
+                        var res = await Task.Run(() => BloatDetector.DeleteWhitelistedCache(finding.Path));
+                        ShowToastRequested?.Invoke(string.Format(LocalizationManager.Get("ToastTempCleaned"), res.HumanSize, res.FilesDeleted), NotificationType.Success);
+                    }
                 }
                 else if (finding.ActionKind == "LaunchTool")
                 {

@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using SystemCoreMonitor.Core;
 using SystemCoreMonitor.Core.Mvvm;
 using SystemCoreMonitor.Models;
+using SystemCoreMonitor.UI;
 
 namespace SystemCoreMonitor.ViewModels
 {
@@ -52,7 +54,16 @@ namespace SystemCoreMonitor.ViewModels
 
         public AsyncRelayCommand<ProcessMetric> TerminateProcessCommand { get; }
         public AsyncRelayCommand<RunawayProcess> EndRunawayCommand { get; }
+        public RelayCommand<ProcessMetric> InspectProcessCommand { get; }
+        public RelayCommand<ProcessMetric> OpenFolderCommand { get; }
         public RelayCommand<ProcessMetric> SearchOnlineCommand { get; }
+        public RelayCommand<ProcessMetric> SuspendProcessCommand { get; }
+        public RelayCommand<ProcessMetric> ResumeProcessCommand { get; }
+        public RelayCommand<ProcessMetric> SetPriorityHighCommand { get; }
+        public RelayCommand<ProcessMetric> SetPriorityAboveNormalCommand { get; }
+        public RelayCommand<ProcessMetric> SetPriorityNormalCommand { get; }
+        public RelayCommand<ProcessMetric> SetPriorityBelowNormalCommand { get; }
+        public RelayCommand<ProcessMetric> SetPriorityIdleCommand { get; }
         public RelayCommand<string> SortCommand { get; }
 
         public event Action<string, NotificationType>? ShowToastRequested;
@@ -64,17 +75,24 @@ namespace SystemCoreMonitor.ViewModels
             TerminateProcessCommand = new AsyncRelayCommand<ProcessMetric>(async item =>
             {
                 if (item == null) return;
-                var result = await Task.Run(() => ProcessManager.RequestGracefulCloseAsync(item.Id, item.Name));
-                if (result == ProcessManager.ProcessCloseResult.ClosedGracefully || result == ProcessManager.ProcessCloseResult.MinimizedToTray)
+
+                // Two-phase close: attempts graceful close first, then escalates to reverse-topological
+                // tree termination with (PID, StartTime) PID-reuse protection (AGENTS rule 12).
+                var (success, message) = await Task.Run(() =>
+                    ProcessManager.CloseProcessWithEscalationAsync(item.Id, item.Name, item.StartTime));
+
+                if (success)
                 {
+                    _allProcesses.Remove(item);
+                    _processes.Remove(item);
                     ShowToastRequested?.Invoke(
-                        string.Format(LocalizationManager.Get("ToastProcessClosed"), item.Name, result),
+                        string.Format(LocalizationManager.Get("ToastProcessEnded"), $"{item.Name} (PID {item.Id})"),
                         NotificationType.Success);
                 }
                 else
                 {
                     ShowToastRequested?.Invoke(
-                        string.Format(LocalizationManager.Get("ToastProcessCloseFailed"), item.Name, item.Id, result),
+                        string.Format(LocalizationManager.Get("ToastProcessCloseFailed"), item.Name, item.Id, message),
                         NotificationType.Error);
                 }
             });
@@ -103,10 +121,71 @@ namespace SystemCoreMonitor.ViewModels
                 }
             });
 
+            InspectProcessCommand = new RelayCommand<ProcessMetric>(item =>
+            {
+                var target = item ?? SelectedProcess;
+                if (target == null) return;
+
+                var win = new ProcessDetailsWindow(target);
+                if (Application.Current?.MainWindow != null && Application.Current.MainWindow.IsVisible)
+                {
+                    win.Owner = Application.Current.MainWindow;
+                }
+                win.ShowDialog();
+            });
+
+            OpenFolderCommand = new RelayCommand<ProcessMetric>(item =>
+            {
+                var target = item ?? SelectedProcess;
+                if (target == null) return;
+
+                if (!ProcessManager.OpenProcessLocation(target.Id, out string error))
+                {
+                    ShowToastRequested?.Invoke(error, NotificationType.Warning);
+                }
+            });
+
             SearchOnlineCommand = new RelayCommand<ProcessMetric>(item =>
             {
-                if (item != null) ProcessManager.SearchProcessOnline(item.Name);
+                var target = item ?? SelectedProcess;
+                if (target != null) ProcessManager.SearchProcessOnline(target.Name);
             });
+
+            SuspendProcessCommand = new RelayCommand<ProcessMetric>(item =>
+            {
+                var target = item ?? SelectedProcess;
+                if (target == null) return;
+
+                if (ProcessManager.SuspendProcess(target.Id, target.Name, out string msg))
+                {
+                    ShowToastRequested?.Invoke(string.Format(LocalizationManager.Get("ToastProcessSuspended"), target.Name), NotificationType.Info);
+                }
+                else
+                {
+                    ShowToastRequested?.Invoke(msg, NotificationType.Error);
+                }
+            });
+
+            ResumeProcessCommand = new RelayCommand<ProcessMetric>(item =>
+            {
+                var target = item ?? SelectedProcess;
+                if (target == null) return;
+
+                if (ProcessManager.ResumeProcess(target.Id, target.Name, out string msg))
+                {
+                    ShowToastRequested?.Invoke(string.Format(LocalizationManager.Get("ToastProcessResumed"), target.Name), NotificationType.Success);
+                }
+                else
+                {
+                    ShowToastRequested?.Invoke(msg, NotificationType.Error);
+                }
+            });
+
+            SetPriorityHighCommand = new RelayCommand<ProcessMetric>(item => ApplyPriority(item, ProcessPriorityClass.High));
+            SetPriorityAboveNormalCommand = new RelayCommand<ProcessMetric>(item => ApplyPriority(item, ProcessPriorityClass.AboveNormal));
+            SetPriorityNormalCommand = new RelayCommand<ProcessMetric>(item => ApplyPriority(item, ProcessPriorityClass.Normal));
+            SetPriorityBelowNormalCommand = new RelayCommand<ProcessMetric>(item => ApplyPriority(item, ProcessPriorityClass.BelowNormal));
+            SetPriorityIdleCommand = new RelayCommand<ProcessMetric>(item => ApplyPriority(item, ProcessPriorityClass.Idle));
 
             SortCommand = new RelayCommand<string>(col =>
             {
@@ -114,6 +193,24 @@ namespace SystemCoreMonitor.ViewModels
                 else { _sortColumn = col ?? "Cpu"; _sortDescending = true; }
                 ApplyFilter();
             });
+        }
+
+        private void ApplyPriority(ProcessMetric? item, ProcessPriorityClass priority)
+        {
+            var target = item ?? SelectedProcess;
+            if (target == null) return;
+
+            if (ProcessManager.SetProcessPriority(target.Id, priority, out string msg))
+            {
+                target.PriorityClass = priority.ToString();
+                ShowToastRequested?.Invoke(
+                    string.Format(LocalizationManager.Get("ToastPriorityChanged"), target.Name, priority),
+                    NotificationType.Success);
+            }
+            else
+            {
+                ShowToastRequested?.Invoke(msg, NotificationType.Error);
+            }
         }
 
         public void Update(List<ProcessMetric> processes)
