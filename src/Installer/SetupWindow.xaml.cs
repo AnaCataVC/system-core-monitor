@@ -114,6 +114,10 @@ namespace SystemCoreMonitor.Installer
             {
                 try
                 {
+                    // 0. Close any running instances so the binary is not locked
+                    UpdateStatus("Closing running instances...", 10);
+                    CloseRunningInstances();
+
                     // 1. Create target directory
                     UpdateStatus("Creating directory...", 20);
                     if (!Directory.Exists(_targetDirectory))
@@ -190,27 +194,63 @@ namespace SystemCoreMonitor.Installer
             }));
         }
 
-        private void ExtractResourceOrCopy(string filename, string targetPath)
+        private static void CloseRunningInstances()
         {
             try
             {
-                var asm = Assembly.GetExecutingAssembly();
-                string resourceName = null;
-                foreach (var name in asm.GetManifestResourceNames())
+                int currentPid = Process.GetCurrentProcess().Id;
+                foreach (var proc in Process.GetProcessesByName("SystemCoreMonitor"))
                 {
-                    if (name.EndsWith(filename, StringComparison.OrdinalIgnoreCase))
+                    try
                     {
-                        resourceName = name;
-                        break;
+                        if (proc.Id != currentPid)
+                        {
+                            proc.Kill();
+                            proc.WaitForExit(3000);
+                        }
+                    }
+                    catch { }
+                    finally
+                    {
+                        proc.Dispose();
                     }
                 }
+            }
+            catch { }
+        }
 
-                if (resourceName != null)
+        private void ExtractResourceOrCopy(string filename, string targetPath)
+        {
+            var asm = Assembly.GetExecutingAssembly();
+            string resourceName = null;
+            foreach (var name in asm.GetManifestResourceNames())
+            {
+                if (name.EndsWith(filename, StringComparison.OrdinalIgnoreCase))
                 {
-                    using (var stream = asm.GetManifestResourceStream(resourceName))
+                    resourceName = name;
+                    break;
+                }
+            }
+
+            if (resourceName != null)
+            {
+                using (var stream = asm.GetManifestResourceStream(resourceName))
+                {
+                    if (stream != null)
                     {
-                        if (stream != null)
+                        try
                         {
+                            using (var fs = new FileStream(targetPath, FileMode.Create, FileAccess.Write))
+                            {
+                                stream.CopyTo(fs);
+                            }
+                            return;
+                        }
+                        catch (IOException)
+                        {
+                            // If file is locked, kill running instances and retry once
+                            CloseRunningInstances();
+                            System.Threading.Thread.Sleep(500);
                             using (var fs = new FileStream(targetPath, FileMode.Create, FileAccess.Write))
                             {
                                 stream.CopyTo(fs);
@@ -219,16 +259,15 @@ namespace SystemCoreMonitor.Installer
                         }
                     }
                 }
-
-                // Fallback: Copy from local directory if resource was not found
-                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                string localFile = Path.Combine(baseDir, filename);
-                if (File.Exists(localFile))
-                {
-                    File.Copy(localFile, targetPath, true);
-                }
             }
-            catch { }
+
+            // Fallback: Copy from local directory if resource was not found
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string localFile = Path.Combine(baseDir, filename);
+            if (File.Exists(localFile))
+            {
+                File.Copy(localFile, targetPath, true);
+            }
         }
 
         private static void CreateShortcut(string shortcutPath, string targetExe, string iconPath)
