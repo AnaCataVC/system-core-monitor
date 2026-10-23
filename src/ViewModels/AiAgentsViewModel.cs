@@ -32,11 +32,21 @@ namespace SystemCoreMonitor.ViewModels
 
         public ObservableCollection<AiLeftoverItem> LeftoverItems => _leftoverItems;
         public bool HasLeftovers => _leftoverItems.Count > 0;
+        public bool HasProtectedLeftovers => _leftoverItems.Any(i => !i.CanDelete);
+        public bool HasOnlyProtectedLeftovers => _leftoverItems.Count > 0 && _leftoverItems.All(i => !i.CanDelete);
+        public int ProtectedLeftoversCount => _leftoverItems.Count(i => !i.CanDelete);
+        public bool IsScanningAnyStorage => _isScanningLeftovers || _isScanningTranscripts;
 
         public bool IsScanningLeftovers
         {
             get => _isScanningLeftovers;
-            set => SetProperty(ref _isScanningLeftovers, value);
+            set
+            {
+                if (SetProperty(ref _isScanningLeftovers, value))
+                {
+                    OnPropertyChanged(nameof(IsScanningAnyStorage));
+                }
+            }
         }
 
         public string LeftoverSummaryDisplay
@@ -48,6 +58,7 @@ namespace SystemCoreMonitor.ViewModels
         public AsyncRelayCommand ScanLeftoversCommand { get; }
         public RelayCommand CancelLeftoverScanCommand { get; }
         public AsyncRelayCommand CleanLeftoversCommand { get; }
+        public AsyncRelayCommand ScanAllStorageCommand { get; }
 
         public bool HasOrphans => _orphanGroups.Count > 0;
         public int OrphanCount => _orphanGroups.Sum(g => g.ProcessCount);
@@ -81,7 +92,13 @@ namespace SystemCoreMonitor.ViewModels
         public bool IsScanningTranscripts
         {
             get => _isScanningTranscripts;
-            set => SetProperty(ref _isScanningTranscripts, value);
+            set
+            {
+                if (SetProperty(ref _isScanningTranscripts, value))
+                {
+                    OnPropertyChanged(nameof(IsScanningAnyStorage));
+                }
+            }
         }
 
         public bool IsPruningTranscripts
@@ -162,31 +179,8 @@ namespace SystemCoreMonitor.ViewModels
             ScanLeftoversCommand = new AsyncRelayCommand(ScanLeftoversAsync);
             CancelLeftoverScanCommand = new RelayCommand(() => _leftoverScanCts?.Cancel());
             CleanLeftoversCommand = new AsyncRelayCommand(CleanLeftoversAsync);
-
-            ScanTranscriptsCommand = new AsyncRelayCommand(async () =>
-            {
-                if (IsScanningTranscripts) return;
-                IsScanningTranscripts = true;
-                ShowProgressRequested?.Invoke(LocalizationManager.Get("ActionScanningTranscripts"));
-                try
-                {
-                    int retention = ConfigManager.Current.TranscriptRetentionDays;
-                    var report = await Task.Run(() => _cleaner.ScanReport(retention));
-                    TranscriptReport = report;
-                    TranscriptSummaryDisplay = string.Format(
-                        "Total: {0} ({1} archivos) • Liberable (> {2}d): {3} ({4} archivos)",
-                        report.TotalSizeDisplay,
-                        report.TotalFilesCount,
-                        retention,
-                        report.StaleSizeDisplay,
-                        report.StaleFilesCount);
-                    ShowToastRequested?.Invoke(string.Format("Escaneo completado: {0} liberables de transcripts IA", report.StaleSizeDisplay), NotificationType.Info);
-                }
-                finally
-                {
-                    IsScanningTranscripts = false;
-                }
-            });
+            ScanTranscriptsCommand = new AsyncRelayCommand(ScanTranscriptsInternalAsync);
+            ScanAllStorageCommand = new AsyncRelayCommand(ScanAllStorageAsync);
 
             CleanStaleTranscriptsCommand = new AsyncRelayCommand(async () =>
             {
@@ -256,6 +250,48 @@ namespace SystemCoreMonitor.ViewModels
             OnPropertyChanged(nameof(OrphanCount));
         }
 
+        private async Task ScanTranscriptsInternalAsync()
+        {
+            if (IsScanningTranscripts) return;
+            IsScanningTranscripts = true;
+            ShowProgressRequested?.Invoke(LocalizationManager.Get("ActionScanningTranscripts"));
+            try
+            {
+                int retention = ConfigManager.Current.TranscriptRetentionDays;
+                var report = await Task.Run(() => _cleaner.ScanReport(retention));
+                TranscriptReport = report;
+                TranscriptSummaryDisplay = string.Format(
+                    "Total: {0} ({1} archivos) • Liberable (> {2}d): {3} ({4} archivos)",
+                    report.TotalSizeDisplay,
+                    report.TotalFilesCount,
+                    retention,
+                    report.StaleSizeDisplay,
+                    report.StaleFilesCount);
+                ShowToastRequested?.Invoke(string.Format("Escaneo completado: {0} liberables de transcripts IA", report.StaleSizeDisplay), NotificationType.Info);
+            }
+            finally
+            {
+                IsScanningTranscripts = false;
+            }
+        }
+
+        private async Task ScanAllStorageAsync()
+        {
+            if (IsScanningAnyStorage) return;
+            ShowProgressRequested?.Invoke(LocalizationManager.Get("ActionScanningAllStorage"));
+            try
+            {
+                var t1 = ScanTranscriptsInternalAsync();
+                var t2 = ScanLeftoversAsync();
+                await Task.WhenAll(t1, t2);
+                ShowToastRequested?.Invoke("Escaneo de almacenamiento IA completado con éxito", NotificationType.Success);
+            }
+            catch (Exception ex)
+            {
+                ShowToastRequested?.Invoke("Error durante el escaneo de almacenamiento: " + ex.Message, NotificationType.Error);
+            }
+        }
+
         // On-demand only (AGENTS rule 11): never wired into the telemetry tick.
         private async Task ScanLeftoversAsync()
         {
@@ -271,6 +307,9 @@ namespace SystemCoreMonitor.ViewModels
                 _leftoverItems.Clear();
                 foreach (var item in report.Items) _leftoverItems.Add(item);
                 OnPropertyChanged(nameof(HasLeftovers));
+                OnPropertyChanged(nameof(HasProtectedLeftovers));
+                OnPropertyChanged(nameof(HasOnlyProtectedLeftovers));
+                OnPropertyChanged(nameof(ProtectedLeftoversCount));
                 LeftoverSummaryDisplay = string.Format("{0}{1} elemento(s) • Liberable: {2} ({3} elemento(s))",
                     report.Cancelled ? "Cancelado • " : string.Empty,
                     report.Items.Count,
@@ -287,8 +326,21 @@ namespace SystemCoreMonitor.ViewModels
 
         private async Task CleanLeftoversAsync()
         {
+            if (IsScanningLeftovers) return;
+
             var deletable = _leftoverItems.Where(i => i.CanDelete).ToList();
-            if (deletable.Count == 0 || IsScanningLeftovers) return;
+            if (deletable.Count == 0)
+            {
+                if (_leftoverItems.Count > 0)
+                {
+                    MessageBox.Show(
+                        string.Format(LocalizationManager.Get("LeftoverProtectedMessage"), _leftoverItems.Count),
+                        LocalizationManager.Get("LeftoverProtectedTitle"),
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+                return;
+            }
 
             var lines = deletable.Take(12).Select(i => string.Format("• [{0}] {1} ({2}) — {3}", i.KindDisplay, i.DisplayPath, i.SizeDisplay, i.Reason)).ToList();
             if (deletable.Count > 12) lines.Add(string.Format(LocalizationManager.Get("ConfirmOrphanKillMore"), deletable.Count - 12));
@@ -298,6 +350,18 @@ namespace SystemCoreMonitor.ViewModels
 
             int retention = ConfigManager.Current.TranscriptRetentionDays;
             var result = await Task.Run(() => _leftoverScanner.Clean(deletable, retention));
+
+            if (result.Failures.Count > 0)
+            {
+                string failureDetails = string.Join("\n", result.Failures.Take(10).Select(f => "• " + f));
+                if (result.Failures.Count > 10) failureDetails += "\n" + string.Format(LocalizationManager.Get("ConfirmOrphanKillMore"), result.Failures.Count - 10);
+                MessageBox.Show(
+                    string.Format(LocalizationManager.Get("LeftoverCleanFailuresMessage"), result.Failures.Count, failureDetails),
+                    LocalizationManager.Get("LeftoverCleanFailuresTitle"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+
             ShowToastRequested?.Invoke(
                 string.Format("Restos IA: {0} limpiado(s), {1} liberado(s), {2} fallo(s)", result.Removed, MetricFormatting.FormatBytesAuto(result.BytesFreed), result.Failures.Count),
                 result.Failures.Count == 0 ? NotificationType.Success : NotificationType.Warning);

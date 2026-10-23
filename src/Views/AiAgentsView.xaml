@@ -135,129 +135,167 @@
                 </StackPanel>
             </Border>
 
-            <!-- AI Agent Leftovers (worktrees, %TEMP% scratch, stale locks, old MCP logs) -->
-            <Border Style="{StaticResource BentoCardStyle}" Padding="14,10" Margin="0,0,0,12">
+            <!-- Unified AI Agent Storage & Maintenance Bento Card -->
+            <Border Style="{StaticResource BentoCardStyle}" Padding="16,14" Margin="0,0,0,12">
                 <StackPanel>
-                    <Grid Margin="0,0,0,8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                            <TextBlock Text="Restos de sesiones de agentes IA" FontSize="14.5" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
-                            <TextBlock Text="{Binding LeftoverSummaryDisplay}" FontSize="12" Foreground="{DynamicResource TextSecondary}" TextTrimming="CharacterEllipsis"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Button Style="{StaticResource PillActionButtonStyle}" Command="{Binding ScanLeftoversCommand}" Margin="0,0,8,0" Padding="10,6">
-                                <TextBlock Text="Escanear" FontSize="12"/>
-                            </Button>
-                            <Button Style="{StaticResource PillActionButtonStyle}" Command="{Binding CancelLeftoverScanCommand}" Margin="0,0,8,0" Padding="10,6"
-                                    Visibility="{Binding IsScanningLeftovers, Converter={StaticResource BoolToVisibilityConverter}}">
-                                <TextBlock Text="Cancelar" FontSize="12"/>
-                            </Button>
-                            <Button Style="{StaticResource PillActionButtonStyle}" Command="{Binding CleanLeftoversCommand}" Background="#D97706" Foreground="White" Padding="10,6"
-                                    Visibility="{Binding HasLeftovers, Converter={StaticResource BoolToVisibilityConverter}}">
-                                <TextBlock Text="Limpiar seleccionables" FontSize="12" FontWeight="SemiBold"/>
-                            </Button>
-                        </StackPanel>
-                    </Grid>
-                    <ItemsControl ItemsSource="{Binding LeftoverItems}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Margin="0,2">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="70"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="80"/>
-                                        <ColumnDefinition Width="70"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="{Binding KindDisplay}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding DisplayPath}" FontSize="11" FontFamily="Consolas, monospace" Foreground="{DynamicResource TextPrimary}"
-                                               TextTrimming="CharacterEllipsis" ToolTip="{Binding Reason}"/>
-                                    <TextBlock Grid.Column="2" Text="{Binding SizeDisplay}" FontSize="11" Foreground="{DynamicResource AccentRam}" HorizontalAlignment="Right"/>
-                                    <TextBlock Grid.Column="3" FontSize="11" HorizontalAlignment="Right">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Text" Value="Limpiable"/>
-                                                <Setter Property="Foreground" Value="#10B981"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding CanDelete}" Value="False">
-                                                        <Setter Property="Text" Value="Solo aviso"/>
-                                                        <Setter Property="Foreground" Value="#F59E0B"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                </Grid>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-            </Border>
-
-            <!-- AI Storage & Transcript Maintenance Bento Card -->
-            <Border Style="{StaticResource BentoCardStyle}" Padding="16,12" Margin="0,0,0,12">
-                <StackPanel>
-                    <Grid Margin="0,0,0,10">
+                    <!-- Master Header with One-Click Scan & Cancel -->
+                    <Grid Margin="0,0,0,12">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
-                            <TextBlock Text="🗄️" FontSize="22" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBlock Text="🗄️" FontSize="24" VerticalAlignment="Center" Margin="0,0,10,0"/>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Mantenimiento de Transcripts y Almacenamiento IA" FontSize="14.5" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
-                                <TextBlock Text="Inspección y depuración de historiales de Claude Code, Gemini y Claude Desktop (>7d)" FontSize="12" Foreground="{DynamicResource TextSecondary}" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="Almacenamiento y Limpieza de Agentes IA" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+                                <TextBlock Text="Historiales de conversación, ramas temporales (worktrees) y cachés de Claude, Gemini y Antigravity" FontSize="12" Foreground="{DynamicResource TextSecondary}" TextTrimming="CharacterEllipsis"/>
                             </StackPanel>
                         </StackPanel>
 
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Button Style="{StaticResource PillActionButtonStyle}" Command="{Binding ScanTranscriptsCommand}" Margin="0,0,8,0" Padding="10,6">
+                            <Button Style="{StaticResource PillActionButtonStyle}" Command="{Binding ScanAllStorageCommand}" Margin="0,0,8,0" Padding="12,6" Background="{DynamicResource AccentCpu}" Foreground="White">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="🔍" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Escanear" FontSize="12.5" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Escanear Todo" FontSize="12.5" FontWeight="Bold"/>
                                 </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource PillActionButtonStyle}" Command="{Binding CleanStaleTranscriptsCommand}" Background="#D97706" Foreground="White" Padding="10,6">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="🧹" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding CleanButtonText, FallbackValue='Limpiar (>7d)'}" FontSize="12.5" FontWeight="Bold"/>
-                                </StackPanel>
+                            <Button Style="{StaticResource PillActionButtonStyle}" Command="{Binding CancelLeftoverScanCommand}" Margin="0,0,8,0" Padding="10,6"
+                                    Visibility="{Binding IsScanningLeftovers, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Text="Cancelar" FontSize="12"/>
                             </Button>
                         </StackPanel>
                     </Grid>
 
-                    <!-- Summary Telemetry Banner -->
-                    <Border Background="{DynamicResource BgControlHover}" CornerRadius="6" Padding="12,8" Margin="0,0,0,6">
-                        <DockPanel LastChildFill="True">
-                            <TextBlock Text="{Binding TranscriptSummaryDisplay}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
-                        </DockPanel>
+                    <!-- Sub-section 1: Historiales de Conversaciones (Transcripts) -->
+                    <Border Background="{DynamicResource BgControl}" BorderBrush="{DynamicResource BorderCard}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,12">
+                        <StackPanel>
+                            <DockPanel LastChildFill="False" Margin="0,0,0,8">
+                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                                    <TextBlock Text="💬" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Historiales de Conversaciones (Transcripts)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+                                </StackPanel>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource PillActionButtonStyle}" Command="{Binding CleanStaleTranscriptsCommand}" Background="#D97706" Foreground="White" Padding="10,5">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="🧹" FontSize="11" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding CleanButtonText, FallbackValue='Limpiar (>7d)'}" FontSize="11.5" FontWeight="Bold"/>
+                                    </StackPanel>
+                                </Button>
+                            </DockPanel>
+
+                            <!-- Transcript Telemetry Summary -->
+                            <TextBlock Text="{Binding TranscriptSummaryDisplay}" FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,6"/>
+
+                            <!-- Discovered Stores Grid / Chips -->
+                            <ItemsControl ItemsSource="{Binding TranscriptReport.Stores}" Margin="0,2,0,0">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel Orientation="Horizontal"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource BgControlHover}" BorderBrush="{DynamicResource BorderCard}" BorderThickness="1" CornerRadius="6" Padding="8,4" Margin="0,0,8,6">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding StoreName}" FontWeight="Bold" FontSize="11.5" Foreground="{DynamicResource TextPrimary}" Margin="0,0,6,0"/>
+                                                <Border Background="{DynamicResource BgControlActive}" CornerRadius="4" Padding="5,2" Margin="0,0,6,0">
+                                                    <TextBlock Text="{Binding TotalSizeDisplay, StringFormat='{}Total: {0}'}" FontSize="11" Foreground="{DynamicResource TextSecondary}"/>
+                                                </Border>
+                                                <Border Background="#2D1515" CornerRadius="4" Padding="5,2">
+                                                    <TextBlock Text="{Binding StaleSizeDisplay, StringFormat='{}Liberable: {0}'}" FontSize="11" FontWeight="SemiBold" Foreground="#F59E0B"/>
+                                                </Border>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
                     </Border>
 
-                    <!-- Discovered Stores Grid / Chips -->
-                    <ItemsControl ItemsSource="{Binding TranscriptReport.Stores}" Margin="0,4,0,0">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel Orientation="Horizontal"/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Background="{DynamicResource BgControl}" BorderBrush="{DynamicResource BorderCard}" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,0,8,6">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding StoreName}" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource TextPrimary}" Margin="0,0,8,0"/>
-                                        <Border Background="{DynamicResource BgControlActive}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
-                                            <TextBlock Text="{Binding TotalSizeDisplay, StringFormat='{}Total: {0}'}" FontSize="11.5" Foreground="{DynamicResource TextSecondary}"/>
-                                        </Border>
-                                        <Border Background="#2D1515" CornerRadius="4" Padding="6,2">
-                                            <TextBlock Text="{Binding StaleSizeDisplay, StringFormat='{}Liberable: {0}'}" FontSize="11.5" FontWeight="SemiBold" Foreground="#F59E0B"/>
-                                        </Border>
+                    <!-- Sub-section 2: Restos Temporales y Worktrees -->
+                    <Border Background="{DynamicResource BgControl}" BorderBrush="{DynamicResource BorderCard}" BorderThickness="1" CornerRadius="8" Padding="12,10">
+                        <StackPanel>
+                            <DockPanel LastChildFill="False" Margin="0,0,0,8">
+                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                                    <TextBlock Text="🌿" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Ramas de Agentes (Worktrees) y Archivos Temporales" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+                                </StackPanel>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource PillActionButtonStyle}" Command="{Binding CleanLeftoversCommand}" Background="#D97706" Foreground="White" Padding="10,5"
+                                        Visibility="{Binding HasLeftovers, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="🧹" FontSize="11" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Limpiar seleccionables" FontSize="11.5" FontWeight="Bold"/>
                                     </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                                </Button>
+                            </DockPanel>
+
+                            <!-- Leftovers Telemetry Summary -->
+                            <TextBlock Text="{Binding LeftoverSummaryDisplay}" FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,8"/>
+
+                            <!-- Safety Warning Banner when items are protected -->
+                            <Border Background="#2A1B0E" BorderBrush="#B45309" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,0,0,8"
+                                    Visibility="{Binding HasProtectedLeftovers, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="🔒" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Los elementos marcados como 'Protegido' contienen cambios de código sin guardar o sesiones recientes para evitar pérdida de datos." FontSize="11.5" Foreground="#FBBF24" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Leftover Items Table -->
+                            <ItemsControl ItemsSource="{Binding LeftoverItems}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource BgControlHover}" CornerRadius="6" Padding="8,6" Margin="0,0,0,4">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="70"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="80"/>
+                                                    <ColumnDefinition Width="90"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Border Grid.Column="0" Background="{DynamicResource BgControlActive}" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding KindDisplay}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
+                                                </Border>
+
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="6,0,8,0">
+                                                    <TextBlock Text="{Binding DisplayPath}" FontSize="11.5" FontFamily="Consolas, monospace" Foreground="{DynamicResource TextPrimary}" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding Reason}" FontSize="10.5" Foreground="{DynamicResource TextSecondary}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                                                </StackPanel>
+
+                                                <TextBlock Grid.Column="2" Text="{Binding SizeDisplay}" FontSize="11.5" Foreground="{DynamicResource AccentRam}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+
+                                                <Border Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Center" CornerRadius="4" Padding="6,2">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Background" Value="#064E3B"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding CanDelete}" Value="False">
+                                                                    <Setter Property="Background" Value="#451A03"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                    <TextBlock FontSize="10.5" FontWeight="Bold">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Text" Value="✓ Limpiable"/>
+                                                                <Setter Property="Foreground" Value="#34D399"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding CanDelete}" Value="False">
+                                                                        <Setter Property="Text" Value="🔒 Protegido"/>
+                                                                        <Setter Property="Foreground" Value="#FBBF24"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </Border>
 

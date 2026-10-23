@@ -533,7 +533,7 @@ namespace SystemCoreMonitor.Core
             result.Message = result.FilesProcessed == 0
                 ? (result.Failures.Count > 0
                     ? $"No se pudieron borrar archivos ({result.Failures.Count} bloqueados o en uso)."
-                    : "No había transcripts fuera de la ventana de retención.")
+                    : (result.SkippedCount > 0 ? $"No se borraron archivos: {result.SkippedCount} protegidos por uso reciente (< 24h) o sesión activa." : "No había transcripts fuera de la ventana de retención."))
                 : (result.Failures.Count > 0
                     ? $"Se eliminaron {result.FilesProcessed} transcripts y se liberaron {result.BytesFreedDisplay} ({result.Failures.Count} bloqueados)."
                     : $"Se eliminaron {result.FilesProcessed} transcripts y se liberaron {result.BytesFreedDisplay}.");

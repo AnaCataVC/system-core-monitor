@@ -11,7 +11,7 @@
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078D6?style=flat&logo=windows)](https://www.microsoft.com/windows)
 [![C# .NET](https://img.shields.io/badge/C%23%2013-WPF%20%2F%20.NET%209-512BD4?style=flat&logo=dotnet)](https://dotnet.microsoft.com/)
-[![Version](https://img.shields.io/badge/Release-v3.3.0-93A8FD?style=flat)](https://github.com/AnaCataVC/system-core-monitor/releases/tag/v3.3.0)
+[![Version](https://img.shields.io/badge/Release-v3.6.0-93A8FD?style=flat)](https://github.com/AnaCataVC/system-core-monitor/releases/tag/v3.6.0)
 [![Binary Size](https://img.shields.io/badge/Binary%20Size-687%20KB-success?style=flat)]()
 [![Tests](https://img.shields.io/badge/Tests-43%20Passed-brightgreen?style=flat)]()
 [![Antivirus](https://img.shields.io/badge/Antivirus-0%20False%20Positives-7EE7B8?style=flat)]()
@@ -29,7 +29,7 @@
 
 
 ### 1. Project Description
-**System Core Monitor v3.3.0** is an interactive desktop command center and telemetry suite built exclusively with compiled C# 13 and Windows Presentation Foundation (.NET 9 WPF). It monitors and actively manages critical system resources—**CPU, Memory (RAM), Multi-Drive Storage, Network Latency & Throughput, Real-Time Processes, AI Agents & Model Context Protocol (MCP) Sessions, AI Transcript Retention & Storage Maintenance, Windows Services, Scheduled Tasks, Startup Applications, and Hardware Accelerators (GPU/NPU)**—packaged into a single standalone `.exe` (687 KB) without third-party runtimes or background services.
+**System Core Monitor v3.6.0** is an interactive desktop command center and telemetry suite built exclusively with compiled C# 13 and Windows Presentation Foundation (.NET 9 WPF). It monitors and actively manages critical system resources—**CPU, Memory (RAM), Multi-Drive Storage, Network Latency & Throughput, Real-Time Processes, AI Agents & Model Context Protocol (MCP) Sessions, AI Transcript Retention & Storage Maintenance, Windows Services, Scheduled Tasks, Startup Applications, and Hardware Accelerators (GPU/NPU)**—packaged into a single standalone `.exe` (687 KB) without third-party runtimes or background services.
 
 ---
 
