@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+         xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+         xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+         xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
+         xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+         IgnorableNamespaces="uap uap3 com rescap">
+
+  <Identity Name="SystemCoreMonitor.Widgets"
+            Publisher="CN=AnaCata"
+            Version="3.7.0.0"
+            ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>System Core Monitor Widgets</DisplayName>
+    <PublisherDisplayName>AnaCata</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+    <Description>Real-time Windows 11 Widgets for CPU, RAM, GPU, Disk, and Network telemetry</Description>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.22000.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+
+  <Applications>
+    <Application Id="App"
+                 Executable="SystemCoreMonitor.exe"
+                 EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements DisplayName="System Core Monitor"
+                          Description="Real-Time Performance Dashboard and Windows 11 Widgets"
+                          BackgroundColor="transparent"
+                          Square150x150Logo="Assets\Square150x150Logo.png"
+                          Square44x44Logo="Assets\Square44x44Logo.png" />
+
+      <Extensions>
+        <!-- Out-of-Process COM Server Registration -->
+        <com:Extension Category="windows.comServer">
+          <com:ComServer>
+            <com:ExeServer Executable="SystemCoreMonitor.exe"
+                           Arguments="-RegisterProcessAsComServer"
+                           DisplayName="System Core Monitor Widget Provider">
+              <com:Class Id="D3397A3F-F15C-48D3-8E1E-9C8A7B6D5E4F"
+                         DisplayName="SystemCoreWidgetProvider" />
+            </com:ExeServer>
+          </com:ComServer>
+        </com:Extension>
+
+        <!-- Windows 11 Widgets Provider Declaration -->
+        <uap3:Extension Category="windows.appExtension">
+          <uap3:AppExtension Name="com.microsoft.windows.widgets"
+                             DisplayName="System Core Monitor Widgets"
+                             Id="SystemCoreMonitorWidgetsExtension"
+                             PublicFolder="Public">
+            <uap3:Properties>
+              <WidgetProvider>
+                <ProviderIcons>
+                  <Icon Path="Assets\WidgetIcon.png" />
+                </ProviderIcons>
+
+                <Activation>
+                  <CreateInstance ClassId="D3397A3F-F15C-48D3-8E1E-9C8A7B6D5E4F" />
+                </Activation>
+
+                <Definitions>
+                  <!-- 1. System Overview Widget -->
+                  <Definition Id="System_Overview"
+                              DisplayName="System Core Overview"
+                              Description="Métricas consolidadas de CPU, RAM, GPU, Disco y Red en tiempo real"
+                              AllowMultiple="true">
+                    <Capabilities>
+                      <Capability>
+                        <Size Name="medium" />
+                      </Capability>
+                      <Capability>
+                        <Size Name="large" />
+                      </Capability>
+                    </Capabilities>
+                    <ThemeResources>
+                      <Icons>
+                        <Icon Path="Assets\WidgetIcon.png" />
+                      </Icons>
+                      <Screenshots>
+                        <Screenshot Path="Assets\ScreenshotOverview.png" DisplayAltText="System Core Overview Widget" />
+                      </Screenshots>
+                    </ThemeResources>
+                  </Definition>
+
+                  <!-- 2. CPU Dedicated Monitor Widget -->
+                  <Definition Id="Cpu_Monitor"
+                              DisplayName="System Core CPU"
+                              Description="Uso total de CPU, distribución de carga y núcleos activos"
+                              AllowMultiple="true">
+                    <Capabilities>
+                      <Capability>
+                        <Size Name="small" />
+                      </Capability>
+                      <Capability>
+                        <Size Name="medium" />
+                      </Capability>
+                      <Capability>
+                        <Size Name="large" />
+                      </Capability>
+                    </Capabilities>
+                    <ThemeResources>
+                      <Icons>
+                        <Icon Path="Assets\WidgetIcon.png" />
+                      </Icons>
+                      <Screenshots>
+                        <Screenshot Path="Assets\ScreenshotCpu.png" DisplayAltText="System Core CPU Monitor Widget" />
+                      </Screenshots>
+                    </ThemeResources>
+                  </Definition>
+
+                  <!-- 3. Compact Low-Density Widget -->
+                  <Definition Id="Compact_Monitor"
+                              DisplayName="System Core Compact"
+                              Description="Monitoreo ultra-compacto de CPU, RAM y GPU con mínima densidad visual"
+                              AllowMultiple="true">
+                    <Capabilities>
+                      <Capability>
+                        <Size Name="small" />
+                      </Capability>
+                      <Capability>
+                        <Size Name="medium" />
+                      </Capability>
+                    </Capabilities>
+                    <ThemeResources>
+                      <Icons>
+                        <Icon Path="Assets\WidgetIcon.png" />
+                      </Icons>
+                      <Screenshots>
+                        <Screenshot Path="Assets\ScreenshotCompact.png" DisplayAltText="System Core Compact Widget" />
+                      </Screenshots>
+                    </ThemeResources>
+                  </Definition>
+                </Definitions>
+              </WidgetProvider>
+            </uap3:Properties>
+          </uap3:AppExtension>
+        </uap3:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+</Package>

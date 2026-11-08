@@ -327,7 +327,19 @@ namespace SystemCoreMonitor.Core
             { "BloatHiberFileTitle", "Archivo de hibernación (sistema)" },
             { "BloatHiberFileHint", "Lo administra Windows: no se borra. Se elimina desactivando la hibernación con 'powercfg /hibernate off'." },
             { "BloatComponentStoreTitle", "Almacén de componentes de Windows (WinSxS)" },
-            { "BloatComponentStoreHint", "Nunca borrar a mano: solo DISM sabe qué componentes siguen en uso. Usa 'Dism /Online /Cleanup-Image /StartComponentCleanup'." }
+            { "BloatComponentStoreHint", "Nunca borrar a mano: solo DISM sabe qué componentes siguen en uso. Usa 'Dism /Online /Cleanup-Image /StartComponentCleanup'." },
+
+            // Windows 11 Widgets
+            { "SettingsWidgetsTitle", "WIDGETS NATIVOS DE WINDOWS 11" },
+            { "SettingsWidgetsDesc", "Monitorea CPU, RAM, GPU, Disco y Red desde el tablero de Widgets (Win+W) incluso con el monitor cerrado." },
+            { "BtnRegisterWidgets", "Registrar / Actualizar Widgets" },
+            { "BtnUnregisterWidgets", "Desregistrar Widgets" },
+            { "BtnOpenWidgetsBoard", "Abrir Tablero de Widgets (Win+W)" },
+            { "WidgetsStatusRegistered", "✓ Registrado en el sistema" },
+            { "WidgetsStatusNotRegistered", "No registrado" },
+            { "ToastWidgetsRegistered", "✓ Widgets de Windows 11 registrados exitosamente" },
+            { "ToastWidgetsUnregistered", "Widgets de Windows 11 desregistrados" },
+            { "ToastWidgetsFailed", "✕ Falló el registro de widgets: {0}" }
         };
 
         private static readonly Dictionary<string, string> StringsEn = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -636,7 +648,19 @@ namespace SystemCoreMonitor.Core
             { "BloatHiberFileTitle", "Hibernation file (system)" },
             { "BloatHiberFileHint", "Managed by Windows: do not delete. It is removed by disabling hibernation with 'powercfg /hibernate off'." },
             { "BloatComponentStoreTitle", "Windows component store (WinSxS)" },
-            { "BloatComponentStoreHint", "Never delete by hand: only DISM knows which components are still in use. Use 'Dism /Online /Cleanup-Image /StartComponentCleanup'." }
+            { "BloatComponentStoreHint", "Never delete by hand: only DISM knows which components are still in use. Use 'Dism /Online /Cleanup-Image /StartComponentCleanup'." },
+
+            // Windows 11 Widgets
+            { "SettingsWidgetsTitle", "WINDOWS 11 NATIVE WIDGETS" },
+            { "SettingsWidgetsDesc", "Monitor CPU, RAM, GPU, Disk, and Network from the Windows Widgets Board (Win+W) even when the main monitor is closed." },
+            { "BtnRegisterWidgets", "Register / Update Widgets" },
+            { "BtnUnregisterWidgets", "Unregister Widgets" },
+            { "BtnOpenWidgetsBoard", "Open Widgets Board (Win+W)" },
+            { "WidgetsStatusRegistered", "✓ Registered in system" },
+            { "WidgetsStatusNotRegistered", "Not registered" },
+            { "ToastWidgetsRegistered", "✓ Windows 11 Widgets successfully registered" },
+            { "ToastWidgetsUnregistered", "Windows 11 Widgets unregistered" },
+            { "ToastWidgetsFailed", "✕ Widget registration failed: {0}" }
         };
 
         public static string Get(string key, string? langOrFallback = null)

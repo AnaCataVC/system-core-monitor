@@ -20,6 +20,7 @@
     <!-- Suppress experimental WPF Fluent ThemeMode runtime-switch warning -->
     <NoWarn>$(NoWarn);WPF0001;CA1416</NoWarn>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <StartupObject>SystemCoreMonitor.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>

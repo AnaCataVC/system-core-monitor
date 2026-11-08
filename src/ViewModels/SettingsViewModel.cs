@@ -37,6 +37,22 @@ namespace SystemCoreMonitor.ViewModels
         public string Retention14dText => LocalizationManager.Get("SettingsRetention14d");
         public string Retention30dText => LocalizationManager.Get("SettingsRetention30d");
 
+        public string TitleWidgets => LocalizationManager.Get("SettingsWidgetsTitle");
+        public string DescWidgets => LocalizationManager.Get("SettingsWidgetsDesc");
+        public string BtnRegisterWidgetsText => LocalizationManager.Get("BtnRegisterWidgets");
+        public string BtnUnregisterWidgetsText => LocalizationManager.Get("BtnUnregisterWidgets");
+        public string BtnOpenWidgetsBoardText => LocalizationManager.Get("BtnOpenWidgetsBoard");
+
+        private bool _isWidgetsRegistered;
+        public bool IsWidgetsRegistered
+        {
+            get => _isWidgetsRegistered;
+            set => SetProperty(ref _isWidgetsRegistered, value);
+        }
+        public string WidgetsStatusDisplay => IsWidgetsRegistered
+            ? LocalizationManager.Get("WidgetsStatusRegistered")
+            : LocalizationManager.Get("WidgetsStatusNotRegistered");
+
         public string CurrentTheme => Config.Theme;
         public string CurrentLanguage => Config.Language;
         public int CurrentInterval => Config.RefreshIntervalSeconds;
@@ -58,12 +74,16 @@ namespace SystemCoreMonitor.ViewModels
         public RelayCommand<object> SetRetentionCommand { get; }
         public RelayCommand EnableAcceleratorsCommand { get; }
         public RelayCommand DisableAcceleratorsCommand { get; }
+        public AsyncRelayCommand RegisterWidgetsCommand { get; }
+        public AsyncRelayCommand UnregisterWidgetsCommand { get; }
+        public RelayCommand OpenWidgetsBoardCommand { get; }
 
         public event Action<string>? ThemeChanged;
         public event Action<string>? LanguageChanged;
         public event Action<bool>? AcceleratorsMonitoringChanged;
         public event Action<int>? IntervalChanged;
         public event Action<int>? RetentionChanged;
+        public event Action<string, Models.NotificationType>? ShowToastRequested;
 
         public SettingsViewModel()
         {
@@ -129,6 +149,48 @@ namespace SystemCoreMonitor.ViewModels
 
             EnableAcceleratorsCommand = new RelayCommand(() => SetAcceleratorsMonitoring(true));
             DisableAcceleratorsCommand = new RelayCommand(() => SetAcceleratorsMonitoring(false));
+
+            RegisterWidgetsCommand = new AsyncRelayCommand(async () =>
+            {
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\');
+                var res = await System.Threading.Tasks.Task.Run(() => Widgets.WidgetRegistrationManager.RegisterPackage(baseDir));
+                CheckWidgetStatus();
+                if (res.Success)
+                {
+                    ShowToastRequested?.Invoke(LocalizationManager.Get("ToastWidgetsRegistered"), Models.NotificationType.Success);
+                }
+                else
+                {
+                    string err = string.Format(LocalizationManager.Get("ToastWidgetsFailed"), res.Message);
+                    ShowToastRequested?.Invoke(err, Models.NotificationType.Error);
+                }
+            });
+
+            UnregisterWidgetsCommand = new AsyncRelayCommand(async () =>
+            {
+                var res = await System.Threading.Tasks.Task.Run(() => Widgets.WidgetRegistrationManager.UnregisterPackage());
+                CheckWidgetStatus();
+                ShowToastRequested?.Invoke(LocalizationManager.Get("ToastWidgetsUnregistered"), Models.NotificationType.Info);
+            });
+
+            OpenWidgetsBoardCommand = new RelayCommand(() =>
+            {
+                Widgets.WidgetRegistrationManager.OpenWidgetsBoard();
+            });
+
+            System.Threading.Tasks.Task.Run(() => CheckWidgetStatus());
+        }
+
+        public void CheckWidgetStatus()
+        {
+            try
+            {
+                bool reg = Widgets.WidgetRegistrationManager.IsPackageRegistered();
+                IsWidgetsRegistered = reg;
+                OnPropertyChanged(nameof(IsWidgetsRegistered));
+                OnPropertyChanged(nameof(WidgetsStatusDisplay));
+            }
+            catch { }
         }
 
         private void SetAcceleratorsMonitoring(bool enabled)

@@ -85,7 +85,13 @@ Assert-Test "Architecture: Core classes loadable via reflection" {
         "SystemCoreMonitor.Modules.GpuCollector",
         "SystemCoreMonitor.Modules.NpuCollector",
         "SystemCoreMonitor.Modules.StartupCollector",
-        "SystemCoreMonitor.UI.ProcessDetailsWindow"
+        "SystemCoreMonitor.UI.ProcessDetailsWindow",
+        "SystemCoreMonitor.Widgets.WidgetDefinitionIds",
+        "SystemCoreMonitor.Widgets.WidgetThemePalette",
+        "SystemCoreMonitor.Widgets.WidgetTelemetryCoordinator",
+        "SystemCoreMonitor.Widgets.WidgetAdaptiveCardRenderer",
+        "SystemCoreMonitor.Widgets.SystemCoreWidgetProvider",
+        "SystemCoreMonitor.Widgets.WidgetRegistrationManager"
     )
 
     foreach ($t in $types) {

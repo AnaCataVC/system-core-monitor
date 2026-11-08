@@ -161,8 +161,21 @@ namespace SystemCoreMonitor.Installer
                         }
                     }
 
-                    // 4. Create Uninstaller script & Registry Entry
-                    UpdateStatus("Registering in Windows Application Manager...", 90);
+                    // 4. Register Windows 11 Widgets (optional / silent)
+                    UpdateStatus("Configuring Windows 11 Widgets...", 85);
+                    try
+                    {
+                        var widgetProc = Process.Start(new ProcessStartInfo(targetExe, "--register-widgets")
+                        {
+                            CreateNoWindow = true,
+                            UseShellExecute = false
+                        });
+                        widgetProc?.WaitForExit(5000);
+                    }
+                    catch { }
+
+                    // 5. Create Uninstaller script & Registry Entry
+                    UpdateStatus("Registering in Windows Application Manager...", 92);
                     RegisterUninstaller(targetExe, targetIco);
 
                     System.Threading.Thread.Sleep(500);
@@ -300,6 +313,7 @@ namespace SystemCoreMonitor.Installer
                 string scriptContent = string.Format(
                     "@echo off\r\n" +
                     "taskkill /f /im SystemCoreMonitor.exe >nul 2>&1\r\n" +
+                    "powershell -NoProfile -Command \"Get-AppxPackage SystemCoreMonitor.Widgets | Remove-AppxPackage\" >nul 2>&1\r\n" +
                     "del /q \"{0}\\System Core Monitor.lnk\" >nul 2>&1\r\n" +
                     "del /q \"{1}\\Programs\\System Core Monitor.lnk\" >nul 2>&1\r\n" +
                     "reg delete \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\SystemCoreMonitor\" /f >nul 2>&1\r\n" +
@@ -319,7 +333,7 @@ namespace SystemCoreMonitor.Installer
                     if (key != null)
                     {
                         key.SetValue("DisplayName", "System Core Monitor");
-                        key.SetValue("DisplayVersion", "3.6.0");
+                        key.SetValue("DisplayVersion", "3.7.0");
                         key.SetValue("Publisher", "AnaCata");
                         key.SetValue("DisplayIcon", exePath);
                         key.SetValue("UninstallString", string.Format("cmd.exe /c \"{0}\"", uninstallScript));

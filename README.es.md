@@ -11,13 +11,13 @@
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078D6?style=flat&logo=windows)](https://www.microsoft.com/windows)
 [![C# .NET](https://img.shields.io/badge/C%23%2013-WPF%20%2F%20.NET%209-512BD4?style=flat&logo=dotnet)](https://dotnet.microsoft.com/)
-[![Version](https://img.shields.io/badge/Release-v3.6.0-93A8FD?style=flat)](https://github.com/AnaCataVC/system-core-monitor/releases/tag/v3.6.0)
+[![Version](https://img.shields.io/badge/Release-v3.7.0-93A8FD?style=flat)](https://github.com/AnaCataVC/system-core-monitor/releases/tag/v3.7.0)
 [![Binary Size](https://img.shields.io/badge/Binary%20Size-687%20KB-success?style=flat)]()
 [![Tests](https://img.shields.io/badge/Tests-43%20Passed-brightgreen?style=flat)]()
 [![Antivirus](https://img.shields.io/badge/Antivirus-0%20False%20Positives-7EE7B8?style=flat)]()
 [![License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat)](LICENSE)
 
-*Centro de mando interactivo y panel de telemetría de alto rendimiento desarrollado exclusivamente en C# 13 compilado y Windows Presentation Foundation (.NET 9 WPF). Con cero dependencias externas, telemetría sub-milisegundo Win32 P/Invoke, Monitor de Sesiones de Agentes de IA y MCP, Motor de Retención y Limpieza de Transcripciones de IA, detección de procesos huérfanos con terminación de árbol segura ante reuso de PID, Cierre Ordenado en Dos Fases, control de procesos a nivel de kernel (NtSuspend/NtResume), planes de energía en 1 clic, limpieza endurecida multizona de almacenamiento, tarjetas métricas Bento interactivas, analítica multidisco responsiva, registro empresarial de fallos, maximización DPI multimonitor sin fisuras y huella de cero heurísticas en un binario autónomo de 687 KB.*
+*Centro de mando interactivo y panel de telemetría de alto rendimiento desarrollado exclusivamente en C# 13 compilado y Windows Presentation Foundation (.NET 9 WPF). Con cero dependencias externas, telemetría sub-milisegundo Win32 P/Invoke, soporte de Widgets Nativos de Windows 11 (System Overview, CPU, Compact), Monitor de Sesiones de Agentes de IA y MCP, Motor de Retención y Limpieza de Transcripciones de IA, detección de procesos huérfanos con terminación de árbol segura ante reuso de PID, Cierre Ordenado en Dos Fases, control de procesos a nivel de kernel (NtSuspend/NtResume), planes de energía en 1 clic, limpieza endurecida multizona de almacenamiento, tarjetas métricas Bento interactivas, analítica multidisco responsiva, registro empresarial de fallos, maximización DPI multimonitor sin fisuras y huella de cero heurísticas en un binario autónomo de 687 KB.*
 
 <br/>
 
@@ -29,7 +29,7 @@
 
 
 ### 1. Descripción del Proyecto
-**System Core Monitor v3.6.0** es un centro de mando interactivo y panel de telemetría de alto rendimiento desarrollado exclusivamente en C# (.NET 9) y Windows Presentation Foundation (WPF). Monitorea y gestiona de forma activa los recursos críticos del sistema—**CPU, Memoria RAM, Almacenamiento Multidisco, Red y Latencia Ping, Procesos en Tiempo Real, Sesiones de Agentes de IA y Servidores MCP, Mantenimiento de Transcripciones y Logs de IA, Servicios de Windows, Tareas Programadas, Programas de Inicio y Aceleradores de Hardware (GPU/NPU)**—en un único ejecutable standalone de **687 KB** sin dependencias NuGet externas.
+**System Core Monitor v3.7.0** es un centro de mando interactivo y panel de telemetría de alto rendimiento desarrollado exclusivamente en C# (.NET 9) y Windows Presentation Foundation (WPF). Monitorea y gestiona de forma activa los recursos críticos del sistema—**CPU, Memoria RAM, Almacenamiento Multidisco, Red y Latencia Ping, Procesos en Tiempo Real, Widgets Nativos de Windows 11, Sesiones de Agentes de IA y Servidores MCP, Mantenimiento de Transcripciones y Logs de IA, Servicios de Windows, Tareas Programadas, Programas de Inicio y Aceleradores de Hardware (GPU/NPU)**—en un único ejecutable standalone de **687 KB** sin dependencias NuGet externas.
 
 ---
 
@@ -76,6 +76,7 @@ System Core Monitor evoluciona de un monitor pasivo a un **Centro de Mando Activ
 - **🛡️ Protocolo de Cierre en Dos Fases:** Cierre seguro y no bloqueante con detección de aplicaciones minimizadas a la Bandeja del Sistema (*System Tray*) y terminación topológica inversa.
 - **🧟 Detección de Huérfanos sin Matar Solo:** Expone los procesos de runtime que dejó atrás una sesión de agente interrumpida — sin reclamar por ninguna sesión viva, con el padre muerto o reasignado, y más antiguos que la ventana de gracia de arranque — y deja la decisión en tus manos, mostrando el motivo, la antigüedad, la RAM y la línea de comandos saneada detrás de una confirmación explícita.
 - **Diseño Bento a Ancho Completo:** Cuadrícula de alta densidad sin márgenes muertos, optimizada para resoluciones modernas.
+- **🧩 Widgets Nativos de Windows 11:** Proveedor out-of-process que entrega 3 widgets nativos (**System Overview**, **CPU Monitor** y **Compact Monitor**) mediante Adaptive Cards 1.5 con barras de progreso SVG inline tematizadas. Funciona en modo headless vía servidor COM sin abrir la interfaz de WPF y con 0% de CPU en reposo.
 - **Registro Resiliente de Fallos (`CrashLogger.cs`):** Captura global de excepciones en `AppDomain`, `TaskScheduler` y `Dispatcher` con rotación automática a 1MB y límite de tasa de 5 registros cada 10 segundos.
 - **Centro de Almacenamiento Multidisco:** Visualizador en tiempo real de unidades de disco (NVMe/SSD/HDD), estado de salud, espacio libre y accesos directos al Explorador de archivos.
 - **🔍 Analizador de Almacenamiento y Detección de Bloat Oculto:** Desglose de tamaño por carpeta bajo demanda, con recorrido paralelo de subárboles, progreso limitado y cancelación a mitad de camino, más la detección de los consumidores de espacio que una barra de uso no puede revelar por diseño — discos virtuales Docker/WSL que crecieron, cachés de compilación regenerables, la papelera, y los archivos de paginación/hibernación etiquetados como del sistema para que nadie los persiga en vano.
@@ -123,6 +124,15 @@ system-core-monitor/
 │   │   ├── SystemMetrics.cs        # DTOs de telemetría de hardware y modelos de procesos
 │   │   ├── AiAgentSession.cs       # Modelos de sesión de Agentes IA y jerarquía de subprocesos MCP
 │   │   └── AiTranscriptModels.cs   # Modelos de escaneo y retención de transcripciones de IA
+│   ├── Widgets/                    # Subsistema nativo de Widgets de Windows 11 (Adaptive Cards + Servidor COM)
+│   │   ├── WidgetModels.cs         # Definiciones, estados de instancia, DTOs y contexto de serialización JSON
+│   │   ├── WidgetThemePalette.cs   # Paletas para los 4 temas y generador SVG de barras y tiras de núcleos
+│   │   ├── WidgetTelemetryCoordinator.cs # Coordinador desacoplado de telemetría con muestreo selectivo
+│   │   ├── WidgetAdaptiveCardRenderer.cs # Renderizador de plantillas y payloads Adaptive Cards 1.5
+│   │   ├── WidgetComInterop.cs     # IClassFactory y registro del servidor COM vía OLE32
+│   │   ├── SystemCoreWidgetProvider.cs # Ciclo de vida del proveedor out-of-process y control por temporizador
+│   │   ├── WidgetRegistrationManager.cs # Despliegue de AppxManifest y registro con Add-AppxPackage
+│   │   └── AppxManifest.template.xml # Declaración XML de la extensión com.microsoft.windows.widgets
 │   ├── Modules/                    # Recolectores autónomos de telemetría (12 recolectores)
 │   │   ├── CpuCollector.cs         # Cálculo delta de CPU vía GetSystemTimes + carga por núcleo (NtQuerySystemInformation)
 │   │   ├── MemoryCollector.cs      # Métricas de memoria física y archivo de paginación con GlobalMemoryStatusEx

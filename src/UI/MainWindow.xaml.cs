@@ -88,6 +88,7 @@ namespace SystemCoreMonitor.UI
 
             _viewModel.Services.ShowToastRequested += (msg, type) => ShowToast(msg, type);
             _viewModel.Startup.ShowToastRequested += (msg, type) => ShowToast(msg, type);
+            _viewModel.Settings.ShowToastRequested += (msg, type) => ShowToast(msg, type);
 
             _viewModel.Settings.ThemeChanged += theme =>
             {
