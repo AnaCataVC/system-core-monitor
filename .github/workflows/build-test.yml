@@ -3,8 +3,18 @@ name: Build & Test CI
 on:
   push:
     branches: [ main, master ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to attach binaries to'
+        required: false
+        default: 'v3.7.0'
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -49,3 +59,13 @@ jobs:
           name: SystemCoreMonitor-Binaries
           path: |
             releases/SystemCoreMonitor-Setup.exe
+
+      - name: Attach Asset to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+        shell: pwsh
+        run: |
+          $targetTag = if ('${{ github.event.inputs.tag }}') { '${{ github.event.inputs.tag }}' } else { '${{ github.ref_name }}' }
+          Write-Host "Attaching SystemCoreMonitor-Setup.exe to release $targetTag..."
+          gh release upload $targetTag releases/SystemCoreMonitor-Setup.exe --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
