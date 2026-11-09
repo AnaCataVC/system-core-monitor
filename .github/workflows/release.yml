@@ -1,0 +1,61 @@
+name: Release Setup Installer
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Publish Release Deliverables
+    runs-on: windows-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Compile System Core Monitor (.NET 9)
+        run: dotnet build src/SystemCoreMonitor.csproj -c Release
+
+      - name: Run Packaging Script
+        run: pwsh -ExecutionPolicy Bypass -File scripts/Build-Package.ps1 -Version "${{ github.ref_name }}"
+
+      - name: Run Native Health Tests
+        run: pwsh -ExecutionPolicy Bypass -File tests/Metrics.Tests.ps1
+
+      - name: Run Deep Stress Tests
+        run: pwsh -ExecutionPolicy Bypass -File tests/DeepStress.Tests.ps1
+
+      - name: Run AI Transcript Unit Tests
+        run: pwsh -ExecutionPolicy Bypass -File tests/AiTranscript.Tests.ps1
+
+      - name: Compute Checksum (SHA-256)
+        run: |
+          $setupExe = "releases\SystemCoreMonitor-Setup.exe"
+          if (-not (Test-Path $setupExe)) {
+            Write-Error "Release artifact $setupExe does not exist."
+            exit 1
+          }
+          Get-FileHash $setupExe -Algorithm SHA256 | ForEach-Object { "$($_.Hash)  $($_.Path | Split-Path -Leaf)" } | Out-File -Encoding ascii "${setupExe}.sha256"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            releases/SystemCoreMonitor-Setup.exe
+            releases/SystemCoreMonitor-Setup.exe.sha256
+          draft: false
+          prerelease: false
+          generate_release_notes: true
