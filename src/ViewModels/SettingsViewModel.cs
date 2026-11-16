@@ -43,6 +43,12 @@ namespace SystemCoreMonitor.ViewModels
         public string BtnUnregisterWidgetsText => LocalizationManager.Get("BtnUnregisterWidgets");
         public string BtnOpenWidgetsBoardText => LocalizationManager.Get("BtnOpenWidgetsBoard");
 
+        public string TitleBehavior => LocalizationManager.Get("SettingsBehaviorTitle");
+        public string DescBehavior => LocalizationManager.Get("SettingsBehaviorDesc");
+        public string MinToTrayText => LocalizationManager.Get("SettingsMinToTray");
+        public string CloseToTrayText => LocalizationManager.Get("SettingsCloseToTray");
+        public string RunAtStartupText => LocalizationManager.Get("SettingsRunAtStartup");
+
         private bool _isWidgetsRegistered;
         public bool IsWidgetsRegistered
         {
@@ -61,6 +67,9 @@ namespace SystemCoreMonitor.ViewModels
         public bool IsInterval5s => Config.RefreshIntervalSeconds == 5;
         public bool IsInterval10s => Config.RefreshIntervalSeconds == 10;
         public bool EnableAcceleratorsMonitoring => Config.EnableAcceleratorsMonitoring;
+        public bool MinimizeToTray => Config.MinimizeToTray;
+        public bool CloseToTray => Config.CloseToTray;
+        public bool RunAtStartup => Config.RunAtStartup;
 
         public int CurrentRetention => Config.TranscriptRetentionDays;
         public bool IsRetention3d => Config.TranscriptRetentionDays == 3;
@@ -74,6 +83,9 @@ namespace SystemCoreMonitor.ViewModels
         public RelayCommand<object> SetRetentionCommand { get; }
         public RelayCommand EnableAcceleratorsCommand { get; }
         public RelayCommand DisableAcceleratorsCommand { get; }
+        public RelayCommand ToggleMinimizeToTrayCommand { get; }
+        public RelayCommand ToggleCloseToTrayCommand { get; }
+        public RelayCommand ToggleRunAtStartupCommand { get; }
         public AsyncRelayCommand RegisterWidgetsCommand { get; }
         public AsyncRelayCommand UnregisterWidgetsCommand { get; }
         public RelayCommand OpenWidgetsBoardCommand { get; }
@@ -83,6 +95,7 @@ namespace SystemCoreMonitor.ViewModels
         public event Action<bool>? AcceleratorsMonitoringChanged;
         public event Action<int>? IntervalChanged;
         public event Action<int>? RetentionChanged;
+        public event Action<bool, bool, bool>? BehaviorChanged;
         public event Action<string, Models.NotificationType>? ShowToastRequested;
 
         public SettingsViewModel()
@@ -150,6 +163,24 @@ namespace SystemCoreMonitor.ViewModels
             EnableAcceleratorsCommand = new RelayCommand(() => SetAcceleratorsMonitoring(true));
             DisableAcceleratorsCommand = new RelayCommand(() => SetAcceleratorsMonitoring(false));
 
+            ToggleMinimizeToTrayCommand = new RelayCommand(() =>
+            {
+                Config.MinimizeToTray = !Config.MinimizeToTray;
+                SaveAndNotifyBehavior(nameof(MinimizeToTray));
+            });
+
+            ToggleCloseToTrayCommand = new RelayCommand(() =>
+            {
+                Config.CloseToTray = !Config.CloseToTray;
+                SaveAndNotifyBehavior(nameof(CloseToTray));
+            });
+
+            ToggleRunAtStartupCommand = new RelayCommand(() =>
+            {
+                Config.RunAtStartup = !Config.RunAtStartup;
+                SaveAndNotifyBehavior(nameof(RunAtStartup));
+            });
+
             RegisterWidgetsCommand = new AsyncRelayCommand(async () =>
             {
                 string baseDir = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\');
@@ -200,6 +231,14 @@ namespace SystemCoreMonitor.ViewModels
             AcceleratorsMonitoringChanged?.Invoke(enabled);
             OnPropertyChanged(nameof(Config));
             OnPropertyChanged(nameof(EnableAcceleratorsMonitoring));
+        }
+
+        private void SaveAndNotifyBehavior(string propertyName)
+        {
+            ConfigManager.Save(Config);
+            OnPropertyChanged(nameof(Config));
+            OnPropertyChanged(propertyName);
+            BehaviorChanged?.Invoke(Config.MinimizeToTray, Config.CloseToTray, Config.RunAtStartup);
         }
     }
 }
