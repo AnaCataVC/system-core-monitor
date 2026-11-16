@@ -77,6 +77,7 @@ namespace SystemCoreMonitor.UI
         {
             _viewModel.Dashboard.ShowToastRequested += (msg, type) => ShowToast(msg, type);
             _viewModel.Dashboard.ShowProgressRequested += msg => ShowToast(msg, NotificationType.InProgress);
+            _viewModel.Dashboard.CopySnapshotRequested += CaptureAndCopySnapshotAsync;
 
             _viewModel.Processes.ShowToastRequested += (msg, type) => ShowToast(msg, type);
 
@@ -106,7 +107,16 @@ namespace SystemCoreMonitor.UI
             _viewModel.Settings.LanguageChanged += lang =>
             {
                 LocalizationManager.CurrentLanguage = lang;
+                ApplyMainChromeLocalization();
                 ShowToast(lang == "es" ? "Idioma cambiado a Español" : "Language set to English", NotificationType.Info);
+            };
+
+            _viewModel.Settings.BehaviorChanged += (minToTray, closeToTray, runAtStartup) =>
+            {
+                _config.MinimizeToTray = minToTray;
+                _config.CloseToTray = closeToTray;
+                _config.RunAtStartup = runAtStartup;
+                SyncTrayMenuCheckStates();
             };
 
             _viewModel.Accelerators.IsEnabled = _config.EnableAcceleratorsMonitoring;
@@ -134,6 +144,7 @@ namespace SystemCoreMonitor.UI
             {
                 _config.RefreshIntervalSeconds = sec;
                 _timer.Interval = TimeSpan.FromSeconds(Math.Max(1, sec));
+                ApplyMainChromeLocalization();
                 bool isEs = LocalizationManager.CurrentLanguage == "es";
                 string msg = isEs
                     ? $"Frecuencia de telemetría: cada {sec} segundo{(sec == 1 ? "" : "s")}"
@@ -153,12 +164,124 @@ namespace SystemCoreMonitor.UI
             };
         }
 
+        private async Task<bool> CaptureAndCopySnapshotAsync()
+        {
+            try
+            {
+                var dash = _viewModel.Dashboard;
+                var hw = await Task.Run(() => _hw.Sample());
+                var procs = _viewModel.Processes.Processes.Count > 0
+                    ? new List<ProcessMetric>(_viewModel.Processes.Processes)
+                    : await Task.Run(() => _proc.Sample(30, _cachedTotalRamGB));
+                var svc = _viewModel.Services.Metric.TotalServices > 0
+                    ? _viewModel.Services.Metric
+                    : await Task.Run(() => _svc.Sample());
+
+                bool copied = false;
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    copied = SnapshotExporter.CopySnapshotToClipboard(
+                        dash.Cpu,
+                        dash.Gpu,
+                        dash.Npu,
+                        dash.Memory,
+                        dash.Drives,
+                        dash.Network,
+                        hw,
+                        procs,
+                        svc);
+                });
+                return copied;
+            }
+            catch (Exception ex)
+            {
+                CrashLogger.LogException("MainWindow.CaptureAndCopySnapshotAsync", ex, false);
+                return false;
+            }
+        }
+
+        private void ApplyMainChromeLocalization()
+        {
+            TxtStatusNotification.Text = string.Format(LocalizationManager.Get("FooterTelemetryStatus"), _config.RefreshIntervalSeconds);
+            TxtFooterRight.Text = LocalizationManager.Get("FooterModeLabel");
+
+            BtnPinTop.ToolTip = LocalizationManager.Get(_isPinnedTop ? "Unpin" : "PinAlwaysOnTop");
+            BtnMinimize.ToolTip = LocalizationManager.Get("Minimize");
+            BtnMaximize.ToolTip = LocalizationManager.Get("Maximize");
+            BtnClose.ToolTip = LocalizationManager.Get("Close");
+
+            MenuWidgetRestore.Header = LocalizationManager.Get("WidgetRestore");
+            MenuWidgetSnap.Header = LocalizationManager.Get("WidgetSnap");
+            MenuWidgetPin.Header = LocalizationManager.Get("WidgetPin");
+            MenuWidgetClose.Header = LocalizationManager.Get("WidgetClose");
+            BtnWidgetPin.ToolTip = LocalizationManager.Get("WidgetPin");
+            BtnWidgetExpand.ToolTip = LocalizationManager.Get("WidgetRestore");
+            BtnWidgetClose.ToolTip = LocalizationManager.Get("Close");
+
+            if (FindResource("TrayContextMenu") is System.Windows.Controls.ContextMenu menu)
+            {
+                foreach (var item in menu.Items)
+                {
+                    if (item is not System.Windows.Controls.MenuItem mi) continue;
+                    switch (mi.Name)
+                    {
+                        case "TrayMenuOpen": mi.Header = LocalizationManager.Get("TrayOpen"); break;
+                        case "TrayMenuPower":
+                            mi.Header = LocalizationManager.Get("TrayPower");
+                            foreach (var sub in mi.Items)
+                            {
+                                if (sub is not System.Windows.Controls.MenuItem sm) continue;
+                                if (sm.Name == "TrayMenuPlanSaver") sm.Header = LocalizationManager.Get("TrayPlanSaver");
+                                else if (sm.Name == "TrayMenuPlanBalanced") sm.Header = LocalizationManager.Get("TrayPlanBalanced");
+                                else if (sm.Name == "TrayMenuPlanHighPerf") sm.Header = LocalizationManager.Get("TrayPlanHighPerf");
+                            }
+                            break;
+                        case "TrayMenuOptimize": mi.Header = LocalizationManager.Get("TrayOptimize"); break;
+                        case "TrayMenuCleanTemp": mi.Header = LocalizationManager.Get("TrayCleanTemp"); break;
+                        case "TrayMenuFlushDns": mi.Header = LocalizationManager.Get("TrayFlushDns"); break;
+                        case "TrayMenuViewModes":
+                            mi.Header = LocalizationManager.Get("TrayViewModes");
+                            foreach (var sub in mi.Items)
+                            {
+                                if (sub is not System.Windows.Controls.MenuItem sm) continue;
+                                if (sm.Name == "TrayMenuViewFull") sm.Header = LocalizationManager.Get("TrayViewFull");
+                                else if (sm.Name == "TrayMenuViewWidget") sm.Header = LocalizationManager.Get("TrayViewWidget");
+                            }
+                            break;
+                        case "TrayMenuSettings":
+                            mi.Header = LocalizationManager.Get("TraySettings");
+                            foreach (var sub in mi.Items)
+                            {
+                                if (sub is not System.Windows.Controls.MenuItem sm) continue;
+                                if (sm.Name == "TrayMenuMinToTray") sm.Header = LocalizationManager.Get("SettingsMinToTray");
+                                else if (sm.Name == "TrayMenuCloseToTray") sm.Header = LocalizationManager.Get("SettingsCloseToTray");
+                                else if (sm.Name == "TrayMenuRunAtStartup") sm.Header = LocalizationManager.Get("SettingsRunAtStartup");
+                                else if (sm.Name == "TrayMenuAlwaysOnTop") sm.Header = LocalizationManager.Get("SettingsAlwaysOnTop");
+                            }
+                            break;
+                        case "TrayMenuTools":
+                            mi.Header = LocalizationManager.Get("TrayTools");
+                            foreach (var sub in mi.Items)
+                            {
+                                if (sub is not System.Windows.Controls.MenuItem sm) continue;
+                                if (sm.Name == "TrayMenuTaskMgr") sm.Header = LocalizationManager.Get("TrayTaskMgr");
+                                else if (sm.Name == "TrayMenuResMon") sm.Header = LocalizationManager.Get("TrayResMon");
+                                else if (sm.Name == "TrayMenuServices") sm.Header = LocalizationManager.Get("TrayServices");
+                            }
+                            break;
+                        case "TrayMenuExit": mi.Header = LocalizationManager.Get("TrayExit"); break;
+                    }
+                }
+            }
+        }
+
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             InitHwndHooks();
             InitAppBranding();
             InitTray();
             SyncTrayMenuCheckStates();
+            ApplyMainChromeLocalization();
 
             _timer.Start();
             _ = SampleTelemetryTickAsync();

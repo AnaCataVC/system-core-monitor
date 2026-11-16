@@ -51,8 +51,8 @@
             <MenuItem Name="TrayMenuFlushDns" Header="🌐 Vaciar Caché DNS" Click="BtnFlushDns_Click"/>
             <Separator Margin="0,3"/>
             <MenuItem Name="TrayMenuViewModes" Header="📐 Modo de Visualización">
-                <MenuItem Header="🖥️ Dashboard Completo" Click="MenuViewFull_Click"/>
-                <MenuItem Header="📌 Mini Widget Flotante" Click="MenuViewWidget_Click"/>
+                <MenuItem Name="TrayMenuViewFull" Header="🖥️ Dashboard Completo" Click="MenuViewFull_Click"/>
+                <MenuItem Name="TrayMenuViewWidget" Header="📌 Mini Widget Flotante" Click="MenuViewWidget_Click"/>
             </MenuItem>
             <MenuItem Name="TrayMenuSettings" Header="⚙️ Preferencias">
                 <MenuItem Name="TrayMenuMinToTray" Header="📥 Minimizar a la bandeja" IsCheckable="True" Click="TrayMenuMinToTray_Click"/>
@@ -62,9 +62,9 @@
             </MenuItem>
             <Separator Margin="0,3"/>
             <MenuItem Name="TrayMenuTools" Header="🛠️ Herramientas de Windows">
-                <MenuItem Header="📊 Administrador de Tareas" Click="BtnTaskMgr_Click"/>
-                <MenuItem Header="📈 Monitor de Recursos" Click="BtnResMon_Click"/>
-                <MenuItem Header="⚙️ Servicios de Windows" Click="MenuOpenServices_Click"/>
+                <MenuItem Name="TrayMenuTaskMgr" Header="📊 Administrador de Tareas" Click="BtnTaskMgr_Click"/>
+                <MenuItem Name="TrayMenuResMon" Header="📈 Monitor de Recursos" Click="BtnResMon_Click"/>
+                <MenuItem Name="TrayMenuServices" Header="⚙️ Servicios de Windows" Click="MenuOpenServices_Click"/>
             </MenuItem>
             <Separator Margin="0,3"/>
             <MenuItem Name="TrayMenuExit" Header="🚪 Salir de System Core Monitor" Click="TrayMenuExit_Click"/>
