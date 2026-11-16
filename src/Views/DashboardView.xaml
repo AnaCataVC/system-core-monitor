@@ -13,36 +13,22 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="12,8">
         <StackPanel>
-            <!-- Top Action Ribbon with Larger Icons & Typography -->
+            <!-- Top Action Ribbon -->
             <Border Style="{StaticResource BentoCardStyle}" Padding="14,10" Margin="0,0,0,12">
                 <DockPanel LastChildFill="False">
-                    <!-- Quick Clean Buttons -->
+                    <!-- Quick Actions -->
                     <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                        <Button Style="{StaticResource PillActionButtonStyle}" Command="{Binding OptimizeMemoryCommand}" Margin="0,0,8,0" Padding="12,6">
+                        <Button Style="{StaticResource PillActionButtonStyle}" Command="{Binding OptimizeMemoryCommand}" ToolTip="{Binding TrimRamTooltip}" Margin="0,0,8,0" Padding="12,6">
                             <StackPanel Orientation="Horizontal">
                                 <Path Data="{StaticResource IconBroom}" Fill="{DynamicResource AccentMem}" Width="16" Height="16" Stretch="Uniform" Margin="0,0,6,0"/>
-                                <TextBlock Text="Optimizar RAM" FontWeight="SemiBold" FontSize="12.5"/>
+                                <TextBlock Text="{Binding TrimRamText}" FontWeight="SemiBold" FontSize="12.5"/>
                             </StackPanel>
                         </Button>
 
-                        <Button Style="{StaticResource PillActionButtonStyle}" Command="{Binding CleanTempCommand}" Margin="0,0,8,0" Padding="12,6">
+                        <Button Style="{StaticResource PillActionButtonStyle}" Command="{Binding CopySnapshotCommand}" ToolTip="{Binding SnapshotTooltip}" Margin="0,0,8,0" Padding="12,6">
                             <StackPanel Orientation="Horizontal">
-                                <Path Data="{StaticResource IconBroom}" Fill="{DynamicResource AccentDisk}" Width="16" Height="16" Stretch="Uniform" Margin="0,0,6,0"/>
-                                <TextBlock Text="Limpiar Temp" FontWeight="SemiBold" FontSize="12.5"/>
-                            </StackPanel>
-                        </Button>
-
-                        <Button Style="{StaticResource PillActionButtonStyle}" Command="{Binding LaunchTaskMgrCommand}" Margin="0,0,8,0" Padding="12,6">
-                            <StackPanel Orientation="Horizontal">
-                                <Path Data="{StaticResource IconProcess}" Fill="{DynamicResource TextSecondary}" Width="16" Height="16" Stretch="Uniform" Margin="0,0,6,0"/>
-                                <TextBlock Text="Task Manager" FontWeight="SemiBold" FontSize="12.5"/>
-                            </StackPanel>
-                        </Button>
-
-                        <Button Style="{StaticResource PillActionButtonStyle}" Command="{Binding LaunchResMonCommand}" Margin="0,0,8,0" Padding="12,6">
-                            <StackPanel Orientation="Horizontal">
-                                <Path Data="{StaticResource IconLaunch}" Fill="{DynamicResource TextSecondary}" Width="16" Height="16" Stretch="Uniform" Margin="0,0,6,0"/>
-                                <TextBlock Text="Resource Monitor" FontWeight="SemiBold" FontSize="12.5"/>
+                                <TextBlock Text="📋" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="{Binding SnapshotText}" FontWeight="SemiBold" FontSize="12.5"/>
                             </StackPanel>
                         </Button>
                     </StackPanel>
@@ -50,8 +36,8 @@
                     <!-- Power Scheme Segmented Control -->
                     <Border Background="{DynamicResource BgSurface}" CornerRadius="7" Padding="2" VerticalAlignment="Center" DockPanel.Dock="Right" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="⚡ Plan:" Foreground="{DynamicResource TextSecondary}" FontSize="12" VerticalAlignment="Center" Margin="6,0,4,0"/>
-                            <Button Command="{Binding SwitchPowerPlanCommand}" CommandParameter="Saver" Content="Eco" Padding="10,4">
+                            <TextBlock Text="{Binding PlanLabelText}" Foreground="{DynamicResource TextSecondary}" FontSize="12" VerticalAlignment="Center" Margin="6,0,4,0"/>
+                            <Button Command="{Binding SwitchPowerPlanCommand}" CommandParameter="Saver" Content="{Binding PlanSaverText}" Padding="10,4">
                                 <Button.Style>
                                     <Style TargetType="Button" BasedOn="{StaticResource SegmentedPillButtonStyle}">
                                         <Style.Triggers>
@@ -66,7 +52,7 @@
                                     </Style>
                                 </Button.Style>
                             </Button>
-                            <Button Command="{Binding SwitchPowerPlanCommand}" CommandParameter="Balanced" Content="Equilibrado" Padding="10,4">
+                            <Button Command="{Binding SwitchPowerPlanCommand}" CommandParameter="Balanced" Content="{Binding PlanBalancedText}" Padding="10,4">
                                 <Button.Style>
                                     <Style TargetType="Button" BasedOn="{StaticResource SegmentedPillButtonStyle}">
                                         <Style.Triggers>
@@ -81,7 +67,7 @@
                                     </Style>
                                 </Button.Style>
                             </Button>
-                            <Button Command="{Binding SwitchPowerPlanCommand}" CommandParameter="HighPerf" Content="Turbo" Padding="10,4">
+                            <Button Command="{Binding SwitchPowerPlanCommand}" CommandParameter="HighPerf" Content="{Binding PlanHighPerfText}" Padding="10,4">
                                 <Button.Style>
                                     <Style TargetType="Button" BasedOn="{StaticResource SegmentedPillButtonStyle}">
                                         <Style.Triggers>
@@ -122,7 +108,7 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                 <Path Data="{StaticResource IconCpu}" Fill="{DynamicResource AccentCpu}" Width="22" Height="22" Stretch="Uniform" Margin="0,0,10,0"/>
-                                <TextBlock Text="PROCESADOR (CPU)" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding CpuTitleText}" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
                             </StackPanel>
                             <TextBlock Grid.Column="1" Text="{Binding Cpu.LoadDisplay}" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource AccentCpu}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="10,0,0,0"/>
                         </Grid>
@@ -147,7 +133,7 @@
                         </ItemsControl>
 
                         <DockPanel LastChildFill="False">
-                            <TextBlock Text="{Binding Cpu.CoreCountDisplay, FallbackValue='Núcleos lógicos activos'}" Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
+                            <TextBlock Text="{Binding Cpu.CoreCountDisplay, FallbackValue='Logical cores'}" Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
                             <TextBlock DockPanel.Dock="Right" Text="{Binding Cpu.Status}" Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
                         </DockPanel>
                     </StackPanel>
@@ -163,7 +149,7 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                 <Path Data="{StaticResource IconRam}" Fill="{DynamicResource AccentRam}" Width="22" Height="22" Stretch="Uniform" Margin="0,0,10,0"/>
-                                <TextBlock Text="MEMORIA (RAM)" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding RamTitleText}" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
                             </StackPanel>
                             <TextBlock Grid.Column="1" Text="{Binding Memory.MemoryDisplay}" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource AccentRam}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="10,0,0,0"/>
                         </Grid>
@@ -172,13 +158,13 @@
                         <ProgressBar Style="{StaticResource PastelProgressBarStyle}" Value="{Binding Memory.LoadPercent}" Foreground="{DynamicResource AccentRam}" Height="8" Margin="0,0,0,10"/>
 
                         <DockPanel LastChildFill="False">
-                            <TextBlock Text="{Binding Memory.UsageBreakdown, FallbackValue='Uso en tiempo real'}" Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
+                            <TextBlock Text="{Binding Memory.UsageBreakdown, FallbackValue='Live usage'}" Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
                             <TextBlock DockPanel.Dock="Right" Text="{Binding Memory.Status}" Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
                         </DockPanel>
                     </StackPanel>
                 </Border>
 
-                <!-- GPU Graphics Card -->
+                <!-- GPU Graphics Card (enriched with VRAM, engines & NPU badge) -->
                 <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource BentoCardStyle}" Margin="0,0,6,0" Padding="18,14">
                     <StackPanel>
                         <Grid Margin="0,0,0,10">
@@ -188,13 +174,48 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                 <Path Data="{StaticResource IconGpu}" Fill="{DynamicResource AccentGpu}" Width="22" Height="22" Stretch="Uniform" Margin="0,0,10,0"/>
-                                <TextBlock Text="GRÁFICOS (GPU)" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding GpuTitleText}" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
                             </StackPanel>
                             <TextBlock Grid.Column="1" Text="{Binding Gpu.LoadPercent, StringFormat='{}{0:F0}%'}" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource AccentGpu}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="10,0,0,0"/>
                         </Grid>
 
                         <!-- Progress Bar -->
-                        <ProgressBar Style="{StaticResource PastelProgressBarStyle}" Value="{Binding Gpu.LoadPercent}" Foreground="{DynamicResource AccentGpu}" Height="8" Margin="0,0,0,10"/>
+                        <ProgressBar Style="{StaticResource PastelProgressBarStyle}" Value="{Binding Gpu.LoadPercent}" Foreground="{DynamicResource AccentGpu}" Height="8" Margin="0,0,0,8"/>
+
+                        <!-- Compact VRAM + Engine Breakdown -->
+                        <WrapPanel Margin="0,0,0,8">
+                            <Border Background="{DynamicResource BgControl}" CornerRadius="4" Padding="6,2" Margin="0,0,6,2">
+                                <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondary}">
+                                    <Run Text="{Binding VramLabelText, Mode=OneWay}"/>
+                                    <Run Text="{Binding Gpu.DedicatedVramPercent, StringFormat='{} {0:F0}%', Mode=OneWay}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                                </TextBlock>
+                            </Border>
+                            <Border Background="{DynamicResource BgControl}" CornerRadius="4" Padding="6,2" Margin="0,0,6,2">
+                                <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondary}">
+                                    <Run Text="{Binding Engine3DText, Mode=OneWay}"/>
+                                    <Run Text="{Binding Gpu.Engines.Engine3DPercent, StringFormat='{} {0:F0}%', Mode=OneWay}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                                </TextBlock>
+                            </Border>
+                            <Border Background="{DynamicResource BgControl}" CornerRadius="4" Padding="6,2" Margin="0,0,6,2">
+                                <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondary}">
+                                    <Run Text="{Binding EngineComputeText, Mode=OneWay}"/>
+                                    <Run Text="{Binding Gpu.Engines.ComputePercent, StringFormat='{} {0:F0}%', Mode=OneWay}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                                </TextBlock>
+                            </Border>
+                            <Border Background="{DynamicResource BgControl}" CornerRadius="4" Padding="6,2" Margin="0,0,6,2">
+                                <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondary}">
+                                    <Run Text="{Binding EngineVideoText, Mode=OneWay}"/>
+                                    <Run Text="{Binding Gpu.Engines.VideoDecodePercent, StringFormat='{} {0:F0}%', Mode=OneWay}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                                </TextBlock>
+                            </Border>
+                            <Border Background="{DynamicResource BgControl}" CornerRadius="4" Padding="6,2" Margin="0,0,0,2"
+                                    Visibility="{Binding Npu.IsPresent, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock FontSize="11" Foreground="{DynamicResource AccentCpu}">
+                                    <Run Text="{Binding NpuChipText, Mode=OneWay}"/>
+                                    <Run Text="{Binding Npu.Status, Mode=OneWay}" FontWeight="SemiBold"/>
+                                </TextBlock>
+                            </Border>
+                        </WrapPanel>
 
                         <DockPanel LastChildFill="False">
                             <TextBlock Text="{Binding Gpu.Name}" Foreground="{DynamicResource TextSecondary}" FontSize="12" TextTrimming="CharacterEllipsis" MaxWidth="320"/>
@@ -213,7 +234,7 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                 <Path Data="{StaticResource IconNetwork}" Fill="{DynamicResource AccentNetwork}" Width="22" Height="22" Stretch="Uniform" Margin="0,0,10,0"/>
-                                <TextBlock Text="RED Y LATENCIA" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding NetTitleText}" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
                             </StackPanel>
                             <TextBlock Grid.Column="1" Text="{Binding Network.PingDisplay}" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource AccentNetwork}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="10,0,0,0"/>
                         </Grid>
@@ -225,10 +246,10 @@
                                 <TextBlock Text="⬆ " Foreground="{DynamicResource AccentNetwork}" FontSize="13"/>
                                 <TextBlock Text="{Binding Network.UploadDisplay}" Foreground="{DynamicResource TextPrimary}" FontSize="13"/>
                             </StackPanel>
-                            <Button DockPanel.Dock="Right" Style="{StaticResource PillActionButtonStyle}" Command="{Binding FlushDnsCommand}" Padding="8,3" Margin="8,0,0,0" VerticalAlignment="Center" ToolTip="Vaciar caché del solucionador DNS de Windows (DnsFlushResolverCache)">
+                            <Button DockPanel.Dock="Right" Style="{StaticResource PillActionButtonStyle}" Command="{Binding FlushDnsCommand}" ToolTip="{Binding FlushDnsTooltip}" Padding="8,3" Margin="8,0,0,0" VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal">
                                     <Path Data="{StaticResource IconNetwork}" Fill="{DynamicResource AccentNetwork}" Width="11" Height="11" Stretch="Uniform" Margin="0,0,5,0"/>
-                                    <TextBlock Text="Vaciar DNS" FontWeight="SemiBold" FontSize="11"/>
+                                    <TextBlock Text="{Binding FlushDnsText}" FontWeight="SemiBold" FontSize="11"/>
                                 </StackPanel>
                             </Button>
                             <TextBlock DockPanel.Dock="Right" Text="{Binding Network.AdapterName}" Foreground="{DynamicResource TextSecondary}" FontSize="12" TextTrimming="CharacterEllipsis" MaxWidth="150" VerticalAlignment="Center"/>
