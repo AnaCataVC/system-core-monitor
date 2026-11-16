@@ -432,7 +432,6 @@ namespace SystemCoreMonitor.Core
             { "StorageScanBloatBtn", "Analizar Cachés" },
             { "StorageScanningBtn", "Analizando..." },
             { "StorageDrivesTitle", "Unidades de Disco" },
-            { "StorageBloatTitle", "Cachés Regenerables & Archivos Voluminosos" },
             { "StorageEmptyBloat", "No se detectaron cachés voluminosas ni archivos liberables." },
 
             // AI Agents
@@ -480,10 +479,8 @@ namespace SystemCoreMonitor.Core
             { "TrayResMon", "📈 Monitor de Recursos" },
             { "TrayServices", "⚙️ Servicios de Windows" },
             { "TrayExit", "🚪 Salir de System Core Monitor" },
-            { "WidgetRestore", "🖥️ Restaurar Dashboard" },
             { "WidgetSnap", "📍 Acoplar a la Esquina Inferior Derecha" },
-            { "WidgetPin", "📌 Fijar Siempre Visible (Always on Top)" },
-            { "WidgetClose", "❌ Cerrar Monitor" }
+            { "WidgetPin", "📌 Fijar Siempre Visible (Always on Top)" }
         };
 
         private static readonly Dictionary<string, string> StringsEn = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -897,7 +894,6 @@ namespace SystemCoreMonitor.Core
             { "StorageScanBloatBtn", "Scan Caches" },
             { "StorageScanningBtn", "Scanning..." },
             { "StorageDrivesTitle", "Disk Drives" },
-            { "StorageBloatTitle", "Regenerable Caches & Large Files" },
             { "StorageEmptyBloat", "No large caches or cleanable bloat detected." },
 
             // AI Agents
@@ -945,10 +941,8 @@ namespace SystemCoreMonitor.Core
             { "TrayResMon", "📈 Resource Monitor" },
             { "TrayServices", "⚙️ Windows Services" },
             { "TrayExit", "🚪 Exit System Core Monitor" },
-            { "WidgetRestore", "🖥️ Restore Dashboard" },
             { "WidgetSnap", "📍 Snap to Bottom-Right Corner" },
-            { "WidgetPin", "📌 Pin Always on Top" },
-            { "WidgetClose", "❌ Close Monitor" }
+            { "WidgetPin", "📌 Pin Always on Top" }
         };
 
         public static string Get(string key, string? langOrFallback = null)
