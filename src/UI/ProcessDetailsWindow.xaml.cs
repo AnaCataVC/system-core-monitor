@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows;
 using System.Windows.Input;
 using SystemCoreMonitor.Core;
@@ -28,8 +28,36 @@ namespace SystemCoreMonitor.UI
         {
         }
 
+        private void ApplyLocalization()
+        {
+            Title = LocalizationManager.Get("ProcWinTitle");
+            LblWinTitle.Text = LocalizationManager.Get("ProcWinTitle");
+            LblProtectedBadge.Text = LocalizationManager.Get("ProcWinProtectedBadge");
+            LblPhysicalRam.Text = LocalizationManager.Get("ProcWinPhysicalRam");
+            LblPeakRam.Text = LocalizationManager.Get("ProcWinPeakRam");
+            LblPeakHint.Text = LocalizationManager.Get("ProcWinPeakHint");
+            LblPrivateCommit.Text = LocalizationManager.Get("ProcWinPrivateCommit");
+            LblPrivateHint.Text = LocalizationManager.Get("ProcWinPrivateHint");
+            LblThreadsHandles.Text = LocalizationManager.Get("ProcWinThreadsHandles");
+            LblExecSection.Text = LocalizationManager.Get("ProcWinExecSection");
+            LblStartTime.Text = LocalizationManager.Get("ProcWinStartTime");
+            LblWindowTitle.Text = LocalizationManager.Get("ProcWinWindowTitle");
+            LblResponsiveness.Text = LocalizationManager.Get("ProcWinResponsiveness");
+            LblFileSection.Text = LocalizationManager.Get("ProcWinFileSection");
+            LblExePath.Text = LocalizationManager.Get("ProcWinExePath");
+            LblDescription.Text = LocalizationManager.Get("ProcWinDescription");
+            LblVersion.Text = LocalizationManager.Get("ProcWinVersion");
+            LblCopyright.Text = LocalizationManager.Get("ProcWinCopyright");
+            LblOpenFolder.Text = LocalizationManager.Get("ProcWinOpenFolder");
+            LblSearchOnline.Text = LocalizationManager.Get("ProcWinSearchOnline");
+            LblCopyDiag.Text = LocalizationManager.Get("ProcWinCopyDiag");
+            LblEndProcess.Text = LocalizationManager.Get("ProcWinEndProcess");
+            BtnCloseBottom.Content = LocalizationManager.Get("ProcWinClose");
+        }
+
         private void LoadProcessDetails()
         {
+            ApplyLocalization();
             _info = ProcessManager.GetDetailedProcessInfo(_pid, _processName);
             if (_info == null) return;
 
@@ -45,7 +73,7 @@ namespace SystemCoreMonitor.UI
                 BadgeProtected.Visibility = Visibility.Visible;
                 BtnEndProcess.IsEnabled = false;
                 BtnEndProcess.Opacity = 0.45;
-                BtnEndProcess.ToolTip = "Protected Windows system process cannot be terminated";
+                BtnEndProcess.ToolTip = LocalizationManager.Get("ProcWinProtectedBadge");
             }
             else
             {
@@ -56,34 +84,34 @@ namespace SystemCoreMonitor.UI
 
             // Memory KPIs
             TxtWorkingSet.Text = string.Format("{0:N1} MB", _info.WorkingSetMB);
-            TxtRamPercent.Text = string.Format("{0:N1}% of Total RAM", _ramPercent > 0 ? _ramPercent : _info.MemoryPercent);
+            TxtRamPercent.Text = string.Format("{0:N1}% RAM", _ramPercent > 0 ? _ramPercent : _info.MemoryPercent);
             TxtPeakWorkingSet.Text = string.Format("{0:N1} MB", _info.PeakWorkingSetMB);
             TxtPrivateBytes.Text = string.Format("{0:N1} MB", _info.PrivateMemoryMB);
             TxtThreadsHandles.Text = string.Format("{0} / {1}", _info.ThreadCount, _info.HandleCount);
-            TxtPriority.Text = string.Format("{0} Priority", _info.PriorityClass);
+            TxtPriority.Text = _info.PriorityClass;
 
             // Execution & Runtime
             TxtStartTime.Text = _info.StartTimeDisplay;
             TxtUptime.Text = _info.UptimeDisplay;
             TxtWindowTitle.Text = !string.IsNullOrWhiteSpace(_info.WindowTitle)
                 ? _info.WindowTitle
-                : "None (Background Process / Service)";
+                : LocalizationManager.Get("ProcWinNoWindow");
 
             TxtResponding.Text = _info.IsResponding
-                ? "Active & Responding Normally"
-                : "Not Responding / Suspended";
+                ? LocalizationManager.Get("ProcWinResponding")
+                : LocalizationManager.Get("ProcWinNotResponding");
 
             // File & Binary Metadata
             TxtExePath.Text = !string.IsNullOrEmpty(_info.ExecutablePath)
                 ? _info.ExecutablePath
-                : "Path not accessible (elevated/system process)";
+                : "N/A";
 
             TxtFileDescription.Text = !string.IsNullOrWhiteSpace(_info.Description)
                 ? _info.Description
                 : (!string.IsNullOrWhiteSpace(_info.FriendlyName) ? _info.FriendlyName : "N/A");
 
             TxtVersion.Text = !string.IsNullOrEmpty(_info.FileVersion) && _info.FileVersion != "N/A"
-                ? string.Format("{0} (Product: {1})", _info.FileVersion, _info.ProductVersion)
+                ? string.Format("{0} ({1})", _info.FileVersion, _info.ProductVersion)
                 : "N/A";
 
             TxtCopyright.Text = !string.IsNullOrWhiteSpace(_info.Copyright)
@@ -121,7 +149,11 @@ namespace SystemCoreMonitor.UI
         private void BtnCopyDiagnostic_Click(object sender, RoutedEventArgs e)
         {
             ProcessManager.CopyDetailedDiagnosticToClipboard(_info);
-            MessageBox.Show("Process diagnostic information copied to clipboard!", "Diagnostics Copied", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(
+                LocalizationManager.Get("ProcWinDiagCopied"),
+                LocalizationManager.Get("ProcWinDiagCopiedTitle"),
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
         }
 
         private async void BtnEndProcess_Click(object sender, RoutedEventArgs e)

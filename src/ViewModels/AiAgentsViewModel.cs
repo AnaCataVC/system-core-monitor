@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,6 +10,7 @@ using SystemCoreMonitor.Core;
 using SystemCoreMonitor.Core.Mvvm;
 using SystemCoreMonitor.Models;
 using SystemCoreMonitor.Modules;
+using SystemCoreMonitor.UI;
 
 namespace SystemCoreMonitor.ViewModels
 {
@@ -36,6 +38,23 @@ namespace SystemCoreMonitor.ViewModels
         public bool HasOnlyProtectedLeftovers => _leftoverItems.Count > 0 && _leftoverItems.All(i => !i.CanDelete);
         public int ProtectedLeftoversCount => _leftoverItems.Count(i => !i.CanDelete);
         public bool IsScanningAnyStorage => _isScanningLeftovers || _isScanningTranscripts;
+        public bool HasNoSessions => _sessions.Count == 0;
+
+        public string HeaderTitleText => LocalizationManager.Get("AiHeaderTitle");
+        public string HeaderDescText => LocalizationManager.Get("AiHeaderDesc");
+        public string SessionsCountDisplay => string.Format(LocalizationManager.Get("AiSessionsCount"), Sessions.Count);
+        public string TotalRamDisplay => string.Format(LocalizationManager.Get("AiTotalRam"), Metric.TotalAggregatedRamDisplay);
+        public string ActiveSessionsTitleText => LocalizationManager.Get("AiActiveSessionsTitle");
+        public string EmptySessionsText => LocalizationManager.Get("AiEmptySessions");
+        public string EndSessionBtnText => LocalizationManager.Get("AiEndSessionBtn");
+        public string StorageTitleText => LocalizationManager.Get("AiStorageTitle");
+        public string StorageDescText => LocalizationManager.Get("AiStorageDesc");
+        public string ScanAllButtonText => LocalizationManager.Get(IsScanningAnyStorage ? "AiScanningBtn" : "AiScanAllBtn");
+        public string CancelBtnText => LocalizationManager.Get("AiCancelBtn");
+        public string TranscriptsTitleText => LocalizationManager.Get("AiTranscriptsTitle");
+        public string LeftoversTitleText => LocalizationManager.Get("AiLeftoversTitle");
+        public string CleanSelectableBtnText => LocalizationManager.Get("AiCleanSelectableBtn");
+        public string InspectProcessBtnText => LocalizationManager.Get("AiInspectProcessBtn");
 
         public bool IsScanningLeftovers
         {
@@ -45,6 +64,7 @@ namespace SystemCoreMonitor.ViewModels
                 if (SetProperty(ref _isScanningLeftovers, value))
                 {
                     OnPropertyChanged(nameof(IsScanningAnyStorage));
+                    OnPropertyChanged(nameof(ScanAllButtonText));
                 }
             }
         }
@@ -97,6 +117,7 @@ namespace SystemCoreMonitor.ViewModels
                 if (SetProperty(ref _isScanningTranscripts, value))
                 {
                     OnPropertyChanged(nameof(IsScanningAnyStorage));
+                    OnPropertyChanged(nameof(ScanAllButtonText));
                 }
             }
         }
@@ -121,12 +142,45 @@ namespace SystemCoreMonitor.ViewModels
         public AsyncRelayCommand ScanTranscriptsCommand { get; }
         public AsyncRelayCommand CleanStaleTranscriptsCommand { get; }
         public RelayCommand<AiAgentSession> ToggleSessionExpandedCommand { get; }
+        public RelayCommand<AiAgentMcpServer> InspectChildProcessCommand { get; }
 
         public event Action<string, NotificationType>? ShowToastRequested;
         public event Action<string>? ShowProgressRequested;
 
         public AiAgentsViewModel()
         {
+            LocalizationManager.LanguageChanged += () => OnPropertyChanged(string.Empty);
+
+            InspectChildProcessCommand = new RelayCommand<AiAgentMcpServer>(child =>
+            {
+                if (child == null) return;
+                try
+                {
+                    using var proc = Process.GetProcessById(child.Pid);
+                    if (child.StartTime != DateTime.MinValue)
+                    {
+                        DateTime actualStart;
+                        try { actualStart = proc.StartTime; }
+                        catch { actualStart = DateTime.MinValue; }
+                        if (actualStart != DateTime.MinValue && Math.Abs((actualStart - child.StartTime).TotalSeconds) > 2.0)
+                        {
+                            ShowToastRequested?.Invoke(string.Format(LocalizationManager.Get("AiProcessNotFound"), child.Pid), NotificationType.Warning);
+                            return;
+                        }
+                    }
+
+                    var win = new ProcessDetailsWindow(child.Pid, child.ProcessName);
+                    if (Application.Current?.MainWindow != null && Application.Current.MainWindow.IsVisible)
+                    {
+                        win.Owner = Application.Current.MainWindow;
+                    }
+                    win.ShowDialog();
+                }
+                catch
+                {
+                    ShowToastRequested?.Invoke(string.Format(LocalizationManager.Get("AiProcessNotFound"), child.Pid), NotificationType.Warning);
+                }
+            });
             ToggleSessionExpandedCommand = new RelayCommand<AiAgentSession>(session =>
             {
                 if (session == null) return;
@@ -214,6 +268,9 @@ namespace SystemCoreMonitor.ViewModels
             Metric = metric;
             _sessions.SyncInPlace(metric.Sessions);
             SyncOrphanGroups(metric.OrphanGroups);
+            OnPropertyChanged(nameof(HasNoSessions));
+            OnPropertyChanged(nameof(SessionsCountDisplay));
+            OnPropertyChanged(nameof(TotalRamDisplay));
         }
 
         // In-place sync so a refresh does not collapse expanded groups or reset the scroll.

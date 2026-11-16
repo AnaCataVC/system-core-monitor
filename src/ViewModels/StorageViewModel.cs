@@ -34,14 +34,31 @@ namespace SystemCoreMonitor.ViewModels
         public bool IsScanningBloat
         {
             get => _isScanningBloat;
-            set => SetProperty(ref _isScanningBloat, value);
+            set
+            {
+                if (SetProperty(ref _isScanningBloat, value))
+                {
+                    OnPropertyChanged(nameof(ScanButtonText));
+                    OnPropertyChanged(nameof(HasNoBloatFindings));
+                }
+            }
         }
+
+        public bool HasNoBloatFindings => !IsScanningBloat && BloatFindings.Count == 0;
+        public string CleanTempBtnText => LocalizationManager.Get("StorageCleanTempBtn");
+        public string EmptyBinBtnText => LocalizationManager.Get("StorageEmptyBinBtn");
+        public string ScanButtonText => LocalizationManager.Get(IsScanningBloat ? "StorageScanningBtn" : "StorageScanBloatBtn");
+        public string DrivesTitleText => LocalizationManager.Get("StorageDrivesTitle");
+        public string BloatTitleText => LocalizationManager.Get("StorageBloatTitle");
+        public string EmptyBloatText => LocalizationManager.Get("StorageEmptyBloat");
 
         public event Action<string, NotificationType>? ShowToastRequested;
         public event Action<string>? ShowProgressRequested;
 
         public StorageViewModel()
         {
+            LocalizationManager.LanguageChanged += () => OnPropertyChanged(string.Empty);
+
             CleanTempCommand = new AsyncRelayCommand(async () =>
             {
                 ShowProgressRequested?.Invoke(LocalizationManager.Get("ActionCleaningTemp"));
@@ -66,6 +83,7 @@ namespace SystemCoreMonitor.ViewModels
                         ShowProgressRequested?.Invoke(LocalizationManager.Get("ActionEmptyingRecycleBin"));
                         await Task.Run(() => NativeMethods.SHEmptyRecycleBin(IntPtr.Zero, null, NativeMethods.SHERB_NOCONFIRMATION | NativeMethods.SHERB_NOPROGRESSUI));
                         BloatFindings.Remove(finding);
+                        OnPropertyChanged(nameof(HasNoBloatFindings));
                         ShowToastRequested?.Invoke(LocalizationManager.Get("ToastRecycleBinEmptied"), NotificationType.Success);
                     }
                     else
@@ -106,7 +124,10 @@ namespace SystemCoreMonitor.ViewModels
 
         public void UpdateBloat(List<BloatFinding> findings)
         {
-            BloatFindings = new ObservableCollection<BloatFinding>(findings ?? new());
+            var filtered = (findings ?? new())
+                .FindAll(f => !string.Equals(f.Category, "RecycleBin", StringComparison.OrdinalIgnoreCase));
+            BloatFindings = new ObservableCollection<BloatFinding>(filtered);
+            OnPropertyChanged(nameof(HasNoBloatFindings));
         }
 
         public void Update(List<DiskMetric> drives, List<BloatFinding> findings)

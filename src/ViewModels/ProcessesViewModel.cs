@@ -39,10 +39,40 @@ namespace SystemCoreMonitor.ViewModels
             {
                 if (SetProperty(ref _searchFilter, value))
                 {
+                    OnPropertyChanged(nameof(HasSearchFilter));
                     ApplyFilter();
                 }
             }
         }
+
+        public bool HasSearchFilter => !string.IsNullOrEmpty(_searchFilter);
+
+        public string SortColumn => _sortColumn;
+        public bool SortDescending => _sortDescending;
+        public bool IsSortCpu => _sortColumn == "Cpu";
+        public bool IsSortRam => _sortColumn == "Ram";
+        public bool IsSortName => _sortColumn == "Name";
+        public bool IsSortPid => _sortColumn == "Pid";
+
+        private string SortArrow(string col) => _sortColumn == col ? (_sortDescending ? " ▼" : " ▲") : string.Empty;
+
+        public string SearchPlaceholderText => LocalizationManager.Get("ProcSearchPlaceholder");
+        public string SortByText => LocalizationManager.Get("ProcSortBy");
+        public string SortCpuLabel => LocalizationManager.Get("ProcSortCpu") + SortArrow("Cpu");
+        public string SortRamLabel => LocalizationManager.Get("ProcSortRam") + SortArrow("Ram");
+        public string SortNameLabel => LocalizationManager.Get("ProcSortName") + SortArrow("Name");
+        public string SortPidLabel => LocalizationManager.Get("ProcSortPid") + SortArrow("Pid");
+        public string DetailsButtonText => LocalizationManager.Get("ProcDetailsBtn");
+        public string CloseButtonText => LocalizationManager.Get("ProcCloseBtn");
+        public string DetailsTooltipText => LocalizationManager.Get("ProcDetailsTooltip");
+        public string CloseTooltipText => LocalizationManager.Get("ProcCloseTooltip");
+        public string MenuInspectText => LocalizationManager.Get("ProcMenuInspect");
+        public string MenuOpenFolderText => LocalizationManager.Get("ProcMenuOpenFolder");
+        public string MenuSearchOnlineText => LocalizationManager.Get("ProcMenuSearchOnline");
+        public string MenuSuspendText => LocalizationManager.Get("ProcMenuSuspend");
+        public string MenuResumeText => LocalizationManager.Get("ProcMenuResume");
+        public string MenuPriorityText => LocalizationManager.Get("ProcMenuPriority");
+        public string MenuTerminateText => LocalizationManager.Get("ProcMenuTerminate");
 
         private readonly ObservableCollection<RunawayProcess> _runawayProcesses = new();
 
@@ -65,6 +95,7 @@ namespace SystemCoreMonitor.ViewModels
         public RelayCommand<ProcessMetric> SetPriorityBelowNormalCommand { get; }
         public RelayCommand<ProcessMetric> SetPriorityIdleCommand { get; }
         public RelayCommand<string> SortCommand { get; }
+        public RelayCommand ClearSearchCommand { get; }
 
         public event Action<string, NotificationType>? ShowToastRequested;
 
@@ -72,9 +103,27 @@ namespace SystemCoreMonitor.ViewModels
 
         public ProcessesViewModel()
         {
+            LocalizationManager.LanguageChanged += () => OnPropertyChanged(string.Empty);
+            ClearSearchCommand = new RelayCommand(() => SearchFilter = string.Empty);
+
             TerminateProcessCommand = new AsyncRelayCommand<ProcessMetric>(async item =>
             {
                 if (item == null) return;
+
+                string contextLine = !string.IsNullOrWhiteSpace(item.WindowTitle)
+                    ? item.WindowTitle
+                    : item.SubtitleText;
+                string prompt = string.Format(
+                    LocalizationManager.Get("ConfirmTerminateBody"),
+                    item.Name,
+                    item.Id,
+                    contextLine);
+                var answer = MessageBox.Show(
+                    prompt,
+                    LocalizationManager.Get("ConfirmTerminateTitle"),
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+                if (answer != MessageBoxResult.Yes) return;
 
                 // Two-phase close: attempts graceful close first, then escalates to reverse-topological
                 // tree termination with (PID, StartTime) PID-reuse protection (AGENTS rule 12).
@@ -191,6 +240,16 @@ namespace SystemCoreMonitor.ViewModels
             {
                 if (col == _sortColumn) _sortDescending = !_sortDescending;
                 else { _sortColumn = col ?? "Cpu"; _sortDescending = true; }
+                OnPropertyChanged(nameof(SortColumn));
+                OnPropertyChanged(nameof(SortDescending));
+                OnPropertyChanged(nameof(IsSortCpu));
+                OnPropertyChanged(nameof(IsSortRam));
+                OnPropertyChanged(nameof(IsSortName));
+                OnPropertyChanged(nameof(IsSortPid));
+                OnPropertyChanged(nameof(SortCpuLabel));
+                OnPropertyChanged(nameof(SortRamLabel));
+                OnPropertyChanged(nameof(SortNameLabel));
+                OnPropertyChanged(nameof(SortPidLabel));
                 ApplyFilter();
             });
         }

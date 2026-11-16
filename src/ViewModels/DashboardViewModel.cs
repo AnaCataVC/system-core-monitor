@@ -63,17 +63,41 @@ namespace SystemCoreMonitor.ViewModels
         public AsyncRelayCommand OptimizeMemoryCommand { get; }
         public AsyncRelayCommand CleanTempCommand { get; }
         public AsyncRelayCommand FlushDnsCommand { get; }
+        public AsyncRelayCommand CopySnapshotCommand { get; }
         public RelayCommand SwitchPowerPlanCommand { get; }
         public RelayCommand LaunchTaskMgrCommand { get; }
         public RelayCommand LaunchResMonCommand { get; }
 
         public event Action<string, NotificationType>? ShowToastRequested;
         public event Action<string>? ShowProgressRequested;
+        public event Func<Task<bool>>? CopySnapshotRequested;
+
+        public string TrimRamText => LocalizationManager.Get("TrimRam");
+        public string TrimRamTooltip => LocalizationManager.Get("TrimRamTooltip");
+        public string SnapshotText => LocalizationManager.Get("Snapshot");
+        public string SnapshotTooltip => LocalizationManager.Get("SnapshotTooltip");
+        public string FlushDnsText => LocalizationManager.Get("FlushDns");
+        public string FlushDnsTooltip => LocalizationManager.Get("FlushDnsTooltip");
+        public string PlanLabelText => LocalizationManager.Get("DashPlanLabel");
+        public string PlanSaverText => LocalizationManager.Get("PowerPlanSaver");
+        public string PlanBalancedText => LocalizationManager.Get("PowerPlanBalanced");
+        public string PlanHighPerfText => LocalizationManager.Get("PowerPlanHighPerf");
+        public string CpuTitleText => LocalizationManager.Get("DashCpuTitle");
+        public string RamTitleText => LocalizationManager.Get("DashRamTitle");
+        public string GpuTitleText => LocalizationManager.Get("DashGpuTitle");
+        public string NetTitleText => LocalizationManager.Get("DashNetTitle");
+        public string VramLabelText => LocalizationManager.Get("DashVramLabel");
+        public string Engine3DText => LocalizationManager.Get("DashEngine3D");
+        public string EngineComputeText => LocalizationManager.Get("DashEngineCompute");
+        public string EngineVideoText => LocalizationManager.Get("DashEngineVideo");
+        public string NpuChipText => LocalizationManager.Get("DashNpuChip");
 
         public DashboardViewModel()
         {
             PowerPlanManager.GetActiveScheme(out string initialScheme);
             _currentPowerPlan = MapSchemeToKey(initialScheme);
+
+            LocalizationManager.LanguageChanged += () => OnPropertyChanged(string.Empty);
 
             OptimizeMemoryCommand = new AsyncRelayCommand(async () =>
             {
@@ -102,6 +126,15 @@ namespace SystemCoreMonitor.ViewModels
                 {
                     ShowToastRequested?.Invoke(LocalizationManager.Get("ToastDnsFailed"), NotificationType.Error);
                 }
+            });
+
+            CopySnapshotCommand = new AsyncRelayCommand(async () =>
+            {
+                if (CopySnapshotRequested == null) return;
+                bool ok = await CopySnapshotRequested.Invoke();
+                ShowToastRequested?.Invoke(
+                    LocalizationManager.Get(ok ? "ToastSnapshotCopied" : "SnapshotFailed"),
+                    ok ? NotificationType.Success : NotificationType.Error);
             });
 
             SwitchPowerPlanCommand = new RelayCommand(param =>

@@ -19,21 +19,31 @@
                         <Button Style="{StaticResource PillActionButtonStyle}" Command="{Binding CleanTempCommand}" Margin="0,0,8,0" Padding="12,6">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="🧹" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="Limpiar Temporales" FontWeight="SemiBold" FontSize="12.5"/>
+                                <TextBlock Text="{Binding CleanTempBtnText}" FontWeight="SemiBold" FontSize="12.5"/>
                             </StackPanel>
                         </Button>
 
                         <Button Style="{StaticResource PillActionButtonStyle}" Command="{Binding EmptyRecycleBinCommand}" Margin="0,0,8,0" Padding="12,6">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="🗑️" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="Vaciar Papelera" FontWeight="SemiBold" FontSize="12.5"/>
+                                <TextBlock Text="{Binding EmptyBinBtnText}" FontWeight="SemiBold" FontSize="12.5"/>
                             </StackPanel>
                         </Button>
 
-                        <Button Style="{StaticResource PillActionButtonStyle}" Command="{Binding ScanBloatCommand}" Padding="12,6">
+                        <Button Command="{Binding ScanBloatCommand}" Padding="12,6">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource PillActionButtonStyle}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsScanningBloat}" Value="True">
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                            <Setter Property="Opacity" Value="0.6"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="🔍" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="Analizar Cachés" FontWeight="SemiBold" FontSize="12.5"/>
+                                <TextBlock Text="{Binding ScanButtonText}" FontWeight="SemiBold" FontSize="12.5"/>
                             </StackPanel>
                         </Button>
                     </StackPanel>
@@ -41,7 +51,7 @@
             </Border>
 
             <!-- Drives Cards Grid -->
-            <TextBlock Text="Unidades de Disco" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="4,0,0,8"/>
+            <TextBlock Text="{Binding DrivesTitleText}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="4,0,0,8"/>
             <ItemsControl ItemsSource="{Binding Drives}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
@@ -53,14 +63,14 @@
                                         <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
                                         <TextBlock Text="{Binding VolumeLabel, StringFormat='{} ({0})'}" FontSize="13" Foreground="{DynamicResource TextSecondary}" Margin="4,0,0,0" VerticalAlignment="Center"/>
                                     </StackPanel>
-                                    <TextBlock DockPanel.Dock="Right" Text="{Binding PercentUsed, StringFormat='{}{0:F0}% usado'}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource AccentDisk}"/>
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding PercentUsed, StringFormat='{}{0:F0}%'}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource AccentDisk}"/>
                                 </DockPanel>
 
                                 <ProgressBar Style="{StaticResource PastelProgressBarStyle}" Value="{Binding PercentUsed}" Foreground="{DynamicResource AccentDisk}" Height="8" Margin="0,0,0,8"/>
 
                                 <DockPanel LastChildFill="False">
-                                    <TextBlock Text="{Binding UsedGB, StringFormat='{}Usado: {0:F1} GB'}" FontSize="12.5" Foreground="{DynamicResource TextSecondary}"/>
-                                    <TextBlock DockPanel.Dock="Right" Text="{Binding TotalGB, StringFormat='{}Capacidad Total: {0:F1} GB'}" FontSize="12.5" Foreground="{DynamicResource TextSecondary}"/>
+                                    <TextBlock Text="{Binding UsedGB, StringFormat='{}{0:F1} GB'}" FontSize="12.5" Foreground="{DynamicResource TextSecondary}"/>
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding TotalGB, StringFormat='{}{0:F1} GB'}" FontSize="12.5" Foreground="{DynamicResource TextSecondary}"/>
                                 </DockPanel>
                             </StackPanel>
                         </Border>
@@ -69,7 +79,11 @@
             </ItemsControl>
 
             <!-- Bloat & Cache Cleaners -->
-            <TextBlock Text="Cachés Regenerables &amp; Archivos Voluminosos" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="4,8,0,8"/>
+            <TextBlock Text="{Binding BloatTitleText}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="4,8,0,8"/>
+            <Border Style="{StaticResource BentoCardStyle}" Padding="16,12" Margin="0,0,0,8"
+                    Visibility="{Binding HasNoBloatFindings, Converter={StaticResource BoolToVisConverter}}">
+                <TextBlock Text="{Binding EmptyBloatText}" FontSize="12.5" Foreground="{DynamicResource TextSecondary}" HorizontalAlignment="Center"/>
+            </Border>
             <ItemsControl ItemsSource="{Binding BloatFindings}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
@@ -80,7 +94,7 @@
                                         CommandParameter="{Binding}"
                                         Background="{DynamicResource AccentDisk}" Foreground="White" Padding="10,5"
                                         Visibility="{Binding HasAction, Converter={StaticResource BoolToVisConverter}}">
-                                    <TextBlock Text="{Binding ActionLabel, FallbackValue='Limpiar'}" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding ActionLabel, FallbackValue='Clean'}" FontSize="12" FontWeight="SemiBold"/>
                                 </Button>
 
                                 <StackPanel VerticalAlignment="Center">
