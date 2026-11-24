@@ -333,7 +333,7 @@ namespace SystemCoreMonitor.Installer
                     if (key != null)
                     {
                         key.SetValue("DisplayName", "System Core Monitor");
-                        key.SetValue("DisplayVersion", "3.9.0");
+                        key.SetValue("DisplayVersion", "3.9.1");
                         key.SetValue("Publisher", "AnaCata");
                         key.SetValue("DisplayIcon", exePath);
                         key.SetValue("UninstallString", string.Format("cmd.exe /c \"{0}\"", uninstallScript));
