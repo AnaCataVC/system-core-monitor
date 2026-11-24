@@ -390,11 +390,10 @@ namespace SystemCoreMonitor.ViewModels
             {
                 if (_leftoverItems.Count > 0)
                 {
-                    MessageBox.Show(
+                    ModernDialog.Info(
                         string.Format(LocalizationManager.Get("LeftoverProtectedMessage"), _leftoverItems.Count),
                         LocalizationManager.Get("LeftoverProtectedTitle"),
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                        DialogKind.Info);
                 }
                 return;
             }
@@ -403,7 +402,7 @@ namespace SystemCoreMonitor.ViewModels
             if (deletable.Count > 12) lines.Add(string.Format(LocalizationManager.Get("ConfirmOrphanKillMore"), deletable.Count - 12));
             string prompt = string.Format(LocalizationManager.Get("ConfirmLeftoverClean"), deletable.Count,
                 MetricFormatting.FormatBytesAuto(deletable.Sum(i => i.SizeBytes)), string.Join("\n", lines));
-            if (MessageBox.Show(prompt, LocalizationManager.Get("ConfirmLeftoverTitle"), MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
+            if (!ModernDialog.Confirm(prompt, LocalizationManager.Get("ConfirmLeftoverTitle"), DialogKind.Warning)) return;
 
             int retention = ConfigManager.Current.TranscriptRetentionDays;
             var result = await Task.Run(() => _leftoverScanner.Clean(deletable, retention));
@@ -412,11 +411,10 @@ namespace SystemCoreMonitor.ViewModels
             {
                 string failureDetails = string.Join("\n", result.Failures.Take(10).Select(f => "• " + f));
                 if (result.Failures.Count > 10) failureDetails += "\n" + string.Format(LocalizationManager.Get("ConfirmOrphanKillMore"), result.Failures.Count - 10);
-                MessageBox.Show(
+                ModernDialog.Info(
                     string.Format(LocalizationManager.Get("LeftoverCleanFailuresMessage"), result.Failures.Count, failureDetails),
                     LocalizationManager.Get("LeftoverCleanFailuresTitle"),
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                    DialogKind.Warning);
             }
 
             ShowToastRequested?.Invoke(
@@ -444,8 +442,7 @@ namespace SystemCoreMonitor.ViewModels
         {
             if (toKill.Count == 0) return;
 
-            var answer = MessageBox.Show(BuildOrphanKillPrompt(toKill), LocalizationManager.Get("ConfirmOrphanKillTitle"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
-            if (answer != MessageBoxResult.Yes) return;
+            if (!ModernDialog.Confirm(BuildOrphanKillPrompt(toKill), LocalizationManager.Get("ConfirmOrphanKillTitle"), DialogKind.Danger)) return;
 
             ShowProgressRequested?.Invoke(LocalizationManager.Get("ActionKillingOrphans"));
             int killed = 0;

@@ -6,10 +6,10 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using SystemCoreMonitor.Core;
 using SystemCoreMonitor.Core.Mvvm;
 using SystemCoreMonitor.Models;
+using SystemCoreMonitor.UI;
 
 namespace SystemCoreMonitor.ViewModels
 {
@@ -452,16 +452,47 @@ namespace SystemCoreMonitor.ViewModels
         {
             if (IsBusyCleaning) return;
 
-            var answer = MessageBox.Show(
-                LocalizationManager.Get("ConfirmDockerPruneBody"),
-                LocalizationManager.Get("ConfirmDockerPruneTitle"),
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
-            if (answer != MessageBoxResult.Yes) return;
-
             IsBusyCleaning = true;
             try
             {
+                bool isRunning = await Task.Run(() => BloatDetector.IsDockerDaemonRunning());
+
+                if (!isRunning)
+                {
+                    bool hasDesktop = !string.IsNullOrWhiteSpace(BloatDetector.FindDockerDesktopExecutable());
+                    if (!hasDesktop)
+                    {
+                        ModernDialog.Info(
+                            LocalizationManager.Get("DockerClosedInfoBody"),
+                            LocalizationManager.Get("ConfirmDockerStartTitle"),
+                            DialogKind.Warning);
+                        return;
+                    }
+
+                    bool startAndClean = ModernDialog.Confirm(
+                        LocalizationManager.Get("ConfirmDockerStartBody"),
+                        LocalizationManager.Get("ConfirmDockerStartTitle"),
+                        DialogKind.Warning,
+                        confirmText: LocalizationManager.Get("ConfirmDockerStartBtn"));
+                    if (!startAndClean) return;
+
+                    ShowProgressRequested?.Invoke(LocalizationManager.Get("ProgressDockerStarting"));
+                    bool started = await Task.Run(() => BloatDetector.StartDockerDesktopAndWait(60));
+                    if (!started)
+                    {
+                        ShowToastRequested?.Invoke(LocalizationManager.Get("ToastDockerStartTimeout"), NotificationType.Warning);
+                        return;
+                    }
+                }
+                else
+                {
+                    bool confirmed = ModernDialog.Confirm(
+                        LocalizationManager.Get("ConfirmDockerPruneBody"),
+                        LocalizationManager.Get("ConfirmDockerPruneTitle"),
+                        DialogKind.Warning);
+                    if (!confirmed) return;
+                }
+
                 ShowProgressRequested?.Invoke(LocalizationManager.Get("ProgressDockerPrune"));
                 var res = await Task.Run(() => BloatDetector.RunDockerPrune());
                 if (res.Success)
@@ -491,12 +522,11 @@ namespace SystemCoreMonitor.ViewModels
             if (IsBusyCleaning || finding == null || !finding.CanCompactVhdx) return;
 
             string body = string.Format(LocalizationManager.Get("ConfirmCompactVhdxBody"), finding.Path);
-            var answer = MessageBox.Show(
+            bool confirmed = ModernDialog.Confirm(
                 body,
                 LocalizationManager.Get("ConfirmCompactVhdxTitle"),
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
-            if (answer != MessageBoxResult.Yes) return;
+                DialogKind.Warning);
+            if (!confirmed) return;
 
             IsBusyCleaning = true;
             try

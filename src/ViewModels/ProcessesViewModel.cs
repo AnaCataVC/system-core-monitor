@@ -118,12 +118,11 @@ namespace SystemCoreMonitor.ViewModels
                     item.Name,
                     item.Id,
                     contextLine);
-                var answer = MessageBox.Show(
+                bool confirmed = ModernDialog.Confirm(
                     prompt,
                     LocalizationManager.Get("ConfirmTerminateTitle"),
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
-                if (answer != MessageBoxResult.Yes) return;
+                    DialogKind.Danger);
+                if (!confirmed) return;
 
                 // Two-phase close: attempts graceful close first, then escalates to reverse-topological
                 // tree termination with (PID, StartTime) PID-reuse protection (AGENTS rule 12).
@@ -152,8 +151,7 @@ namespace SystemCoreMonitor.ViewModels
 
                 // Detection is a filter for human attention, never a verdict (AGENTS rule 13).
                 string prompt = string.Format(LocalizationManager.Get("ConfirmRunawayKill"), item.Name, item.Pid, item.Reason, item.CommandLine);
-                var answer = MessageBox.Show(prompt, LocalizationManager.Get("ConfirmRunawayTitle"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
-                if (answer != MessageBoxResult.Yes) return;
+                if (!ModernDialog.Confirm(prompt, LocalizationManager.Get("ConfirmRunawayTitle"), DialogKind.Danger)) return;
 
                 // The sampled StartTime aborts the kill if the PID was recycled since the sample (AGENTS rule 12).
                 string message = string.Empty;

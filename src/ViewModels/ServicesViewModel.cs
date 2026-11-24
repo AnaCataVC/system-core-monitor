@@ -8,6 +8,7 @@ using SystemCoreMonitor.Core;
 using SystemCoreMonitor.Core.Mvvm;
 using SystemCoreMonitor.Models;
 using SystemCoreMonitor.Modules;
+using SystemCoreMonitor.UI;
 
 namespace SystemCoreMonitor.ViewModels
 {
@@ -98,8 +99,7 @@ namespace SystemCoreMonitor.ViewModels
             {
                 if (svc == null) return;
                 string prompt = string.Format(LocalizationManager.Get("ConfirmStopSvcBody"), svc.DisplayName, svc.ServiceName);
-                var answer = MessageBox.Show(prompt, LocalizationManager.Get("ConfirmStopSvcTitle"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
-                if (answer != MessageBoxResult.Yes) return;
+                if (!ModernDialog.Confirm(prompt, LocalizationManager.Get("ConfirmStopSvcTitle"), DialogKind.Warning)) return;
 
                 bool ok = await Task.Run(() => ServiceCollector.StopService(svc.ServiceName));
                 if (ok)

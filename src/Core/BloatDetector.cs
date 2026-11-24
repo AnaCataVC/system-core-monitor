@@ -318,6 +318,107 @@ namespace SystemCoreMonitor.Core
         }
 
         /// <summary>
+        /// Checks whether the Docker Engine daemon is currently reachable via the Docker CLI.
+        /// </summary>
+        public static bool IsDockerDaemonRunning()
+        {
+            var probe = RunCliProcess("docker", "info --format \"{{.ServerVersion}}\"", 5_000);
+            return probe.Started && probe.ExitCode == 0;
+        }
+
+        /// <summary>
+        /// Locates Docker Desktop executable on standard Windows install paths.
+        /// </summary>
+        public static string? FindDockerDesktopExecutable()
+        {
+            var candidates = new[]
+            {
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Docker", "Docker", "Docker Desktop.exe"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Docker", "Docker Desktop.exe")
+            };
+
+            foreach (var path in candidates)
+            {
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                        return path;
+                }
+                catch { }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Starts Docker Desktop and polls until the Docker Engine daemon responds or the timeout expires.
+        /// </summary>
+        public static bool StartDockerDesktopAndWait(int maxWaitSeconds = 60)
+        {
+            string? exe = FindDockerDesktopExecutable();
+            if (string.IsNullOrWhiteSpace(exe)) return false;
+
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = exe,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                CrashLogger.LogException("BloatDetector.StartDockerDesktop", ex, false);
+                return false;
+            }
+
+            var deadline = DateTime.UtcNow.AddSeconds(Math.Max(10, maxWaitSeconds));
+            while (DateTime.UtcNow < deadline)
+            {
+                System.Threading.Thread.Sleep(2000);
+                if (IsDockerDaemonRunning()) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Prefers PowerShell 7+ (pwsh.exe) when installed, falling back to Windows PowerShell 5.1 (powershell.exe).
+        /// </summary>
+        public static string ResolvePowerShellExecutable()
+        {
+            try
+            {
+                string? pathEnv = Environment.GetEnvironmentVariable("PATH");
+                if (!string.IsNullOrWhiteSpace(pathEnv))
+                {
+                    foreach (var dir in pathEnv.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        try
+                        {
+                            string candidate = Path.Combine(dir.Trim(), "pwsh.exe");
+                            if (File.Exists(candidate)) return candidate;
+                        }
+                        catch { }
+                    }
+                }
+
+                string programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+                if (!string.IsNullOrWhiteSpace(programFiles))
+                {
+                    foreach (var sub in new[] { "7", "7-preview" })
+                    {
+                        string candidate = Path.Combine(programFiles, "PowerShell", sub, "pwsh.exe");
+                        if (File.Exists(candidate)) return candidate;
+                    }
+                }
+            }
+            catch { }
+
+            return "powershell.exe";
+        }
+
+        /// <summary>
         /// Safely prunes stopped Docker containers, unused networks, dangling images, and build cache
         /// without touching persistent volumes.
         /// </summary>
@@ -395,10 +496,11 @@ namespace SystemCoreMonitor.Core
 
                 File.WriteAllText(scriptPath, scriptContent);
 
+                string psExe = ResolvePowerShellExecutable();
                 string psCommand = $"wsl --shutdown; Start-Sleep -Seconds 3; diskpart /s '{scriptPath.Replace("'", "''")}'";
                 var psi = new ProcessStartInfo
                 {
-                    FileName = "powershell.exe",
+                    FileName = psExe,
                     Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{psCommand}\"",
                     UseShellExecute = true,
                     Verb = "runas",
