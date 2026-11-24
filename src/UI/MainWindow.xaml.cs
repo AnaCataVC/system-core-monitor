@@ -86,6 +86,11 @@ namespace SystemCoreMonitor.UI
 
             _viewModel.Storage.ShowToastRequested += (msg, type) => ShowToast(msg, type);
             _viewModel.Storage.ShowProgressRequested += msg => ShowToast(msg, NotificationType.InProgress);
+            _viewModel.Storage.RefreshRequested += async () =>
+            {
+                var freshDrives = await Task.Run(() => _disk.Sample(forceRefresh: true));
+                _viewModel.Storage.UpdateDrives(freshDrives);
+            };
 
             _viewModel.Services.ShowToastRequested += (msg, type) => ShowToast(msg, type);
             _viewModel.Startup.ShowToastRequested += (msg, type) => ShowToast(msg, type);

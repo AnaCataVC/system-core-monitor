@@ -60,6 +60,9 @@ namespace SystemCoreMonitor.Models
         public double PercentUsed { get; set; }
         public string Status { get; set; }
 
+        public string RootPath => string.IsNullOrEmpty(Name) ? "" : (Name.EndsWith("\\") ? Name : Name + "\\");
+        public bool HasDriveFormat => !string.IsNullOrWhiteSpace(DriveFormat);
+
         public DiskMetric()
         {
             Name = "";
@@ -439,6 +442,13 @@ namespace SystemCoreMonitor.Models
         {
             get { return !string.Equals(ActionKind, "Informational", System.StringComparison.OrdinalIgnoreCase); }
         }
+
+        public bool IsCleanable => string.Equals(ActionKind, "SafeDelete", System.StringComparison.OrdinalIgnoreCase);
+        public bool IsInformational => string.Equals(ActionKind, "Informational", System.StringComparison.OrdinalIgnoreCase);
+        public bool HasPath => !string.IsNullOrWhiteSpace(Path);
+        public bool IsDockerDisk => string.Equals(Category, "DockerVirtualDisk", System.StringComparison.OrdinalIgnoreCase);
+        public bool CanCompactVhdx => (IsDockerDisk || string.Equals(Category, "WslVirtualDisk", System.StringComparison.OrdinalIgnoreCase))
+            && HasPath && Path.EndsWith(".vhdx", System.StringComparison.OrdinalIgnoreCase);
 
         public BloatFinding()
         {
