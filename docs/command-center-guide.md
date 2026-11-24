@@ -1,6 +1,6 @@
 # ⚡ System Core Monitor — Command Center & Action Buttons Technical Manual
 
-This document provides a comprehensive technical breakdown of the interactive controls, Win32 / NT kernel P/Invoke mechanisms, concurrency invariants, windowing architectures, crash resilience, and security guardrails implemented in **System Core Monitor v3.8.0**.
+This document provides a comprehensive technical breakdown of the interactive controls, Win32 / NT kernel P/Invoke mechanisms, concurrency invariants, windowing architectures, crash resilience, and security guardrails implemented in **System Core Monitor v3.9.0**.
 
 ---
 
@@ -147,19 +147,21 @@ sequenceDiagram
 
 | Detector | Why a usage bar misses it | Action class |
 | :--- | :--- | :--- |
-| Docker / WSL VHDX | Dynamically expanding images grow as data is written but never release blocks when it is deleted, so file size says nothing about internal usage | `LaunchTool` |
+| Docker Desktop VHDX (`data` / `distro`) | Dynamically expanding images grow as data is written but never release blocks when deleted; distinguished by role folder | `DockerPrune` + `CompactVhdx` |
+| WSL Distro VHDX | Dynamically expanding Linux distro virtual disks under `%LOCALAPPDATA%\Packages`; identified by distro name | `CompactVhdx` |
 | Build caches (Gradle, NuGet, npm, pip, Maven, Android) | Regenerable, scattered across the profile, individually unremarkable | `SafeDelete` |
 | Recycle Bin | Queried through `SHQueryRecycleBin`; invisible as a normal folder | `SafeDelete` |
 | `pagefile.sys` / `hiberfil.sys` | Large and system-owned — labeled explicitly so users stop hunting them | `Informational` |
 | WinSxS component store | Only DISM knows which components are still referenced | `LaunchTool` |
 
-- **Internal VHDX usage is deliberately not inferred.** Doing so would require mounting the image or shelling out to an external CLI, neither of which belongs in a dependency-free binary. Reporting the on-disk file size with an explanation is both honest and actionable.
+- **Internal VHDX usage is deliberately not inferred.** Reporting the on-disk file size with clear Docker/WSL attribution is honest and actionable. **Clean Docker** (`DockerPrune`) runs `docker system prune -f` and `docker builder prune -f` after explicit user confirmation while preserving persistent volumes. **Compact VHDX** (`CompactVhdx`) runs `wsl --shutdown` followed by elevated `diskpart compact vdisk` (via UAC) to return sparse blocks to Windows.
 
-#### Deletion Safety
+#### Deletion & Compaction Safety
 - `BloatDetector.IsWhitelistedForDeletion` is an **exact normalized match** against a constant list of regenerable cache roots — not a prefix check, and never a path derived from user input or from a scan result.
+- `BloatDetector.IsWhitelistedVhdxForCompaction` restricts elevated `diskpart` compaction strictly to existing `.vhdx` files under `%LOCALAPPDATA%\Docker` or `%LOCALAPPDATA%\Packages` and rejects quotes/newlines to prevent script injection.
 - Deletion runs through `SafeTempCleaner.CleanWhitelistedCache`, inheriting the dual-timestamp age gate and the junction guard. That age gate is not incidental: it is what prevents a cleaner from destroying data that a process is actively writing.
 - `IsSafeTempRoot` remains a second, independent barrier, rejecting drive roots and system/profile directories even if a caller were to skip its whitelist check.
-- Items classified `Informational` expose **no delete affordance at all**, and anything requiring elevation (compacting a VHDX, running DISM) is surfaced as the exact command rather than executed — the application holds no elevation subsystem by design.
+- Items classified `Informational` expose **no delete affordance at all**.
 
 ---
 
